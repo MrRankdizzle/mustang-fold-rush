@@ -1061,6 +1061,11 @@ html[data-text="large"]{font-size:112.5%}html[data-text="xl"]{font-size:125%}
 .set-try{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .set-foot{font-size:.84rem;color:var(--ink-2);margin:0}
 .set-reset{justify-self:start}
+.set-wipe{justify-self:start}
+.set-confirm{display:grid;gap:10px;padding:14px;border-radius:12px;border:2px solid var(--bad);background:var(--bad-bg)}
+.set-confirm p{margin:0;font-size:.92rem;line-height:1.45}
+.set-confirm .row{gap:8px}
+.btn.danger{background:var(--bad);color:var(--on-accent);box-shadow:0 2px 0 color-mix(in srgb,var(--bad) 65%,#000)}
 .set-preview{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.86rem;color:var(--ink-2)}
 .set-preview .base{width:30px;height:34px;font-size:.95rem}
 .set-preview .chip{cursor:default;padding:5px 10px}
@@ -1449,7 +1454,7 @@ addEventListener('scroll', hideSayPop, { passive: true });
 function openSettings() {
   if ($('.set-layer')) return;
   dispatchEvent(new Event('mfr-pause')); // games with a clock (Dogma Invaders) pause while the drawer is open
-  const opener = document.activeElement;
+  const opener = document.activeElement, played = GAMES.filter(x => store.data.games[x.id]).length;
   const seg = (k, label, opts, note = '') => `<fieldset class="set-row"><legend>${label}</legend>${note ? `<p class="set-note">${note}</p>` : ''}<div class="set-seg">${opts.map(([v, t]) => `<label${SET[k] === v ? ' class="on"' : ''}><input type="radio" name="set-${k}" value="${v}"${SET[k] === v ? ' checked' : ''}>${t}</label>`).join('')}</div></fieldset>`;
   const sw = (k, label, note) => `<button type="button" class="set-sw" role="switch" data-sw="${k}" aria-checked="${SET[k] === 'on'}"><span><b>${label}</b><span class="set-note">${note}</span></span><span class="sw-track" aria-hidden="true"></span></button>`;
   const body = `
@@ -1469,6 +1474,15 @@ function openSettings() {
     <section class="set-sec" aria-labelledby="setS3"><h3 id="setS3">Colors</h3>
       ${seg('cvd', 'Color vision', [['default', 'Standard colors'], ['cb', 'Color-blind friendly']], 'Color-blind friendly uses colors most people can tell apart and adds a check or X to every right and wrong answer.')}
       <div class="set-preview" aria-hidden="true"><span class="base A">A</span><span class="base U">U</span><span class="base G">G</span><span class="base C">C</span><span class="chip ok">Right</span><span class="chip no">Wrong</span></div>
+    </section>
+    <section class="set-sec" aria-labelledby="setS4"><h3 id="setS4">Your progress</h3>
+      <p class="set-note">${played ? `Saved on this device${store.data.name ? ` for <b>${esc(store.data.name)}</b>` : ''}: ${played} of ${GAMES.length} games played.` : store.data.name ? `Saved on this device for <b>${esc(store.data.name)}</b>. No games played yet.` : 'Nothing saved yet.'}</p>
+      <button type="button" class="btn ghost small set-wipe" id="setWipe">${restartIcon} Start over from the beginning</button>
+      <div class="set-confirm" id="setWipeBox" role="alert" hidden>
+        <p><b>Erase everything and start over?</b> This removes your name, every game score, your My Evidence reflection, and your Dogma Invaders high score from this device. You can't undo this.</p>
+        <p>Your settings stay the same. Download your evidence first if your teacher needs it.</p>
+        <div class="row"><button type="button" class="btn danger small" id="setWipeYes">Yes, erase everything</button><button type="button" class="btn ghost small" id="setWipeNo">Keep my progress</button></div>
+      </div>
     </section>
     <p class="set-foot">These settings stay on this device and never change your scores.</p>
     <button type="button" class="btn ghost small set-reset" id="setReset">Reset all settings</button>`;
@@ -1490,6 +1504,14 @@ function openSettings() {
   $$('.set-seg input', layer).forEach(r => r.onchange = () => { $$('label', r.closest('.set-seg')).forEach(l => l.classList.toggle('on', l.contains(r))); setSetting(r.name.slice(4), r.value); });
   $$('[data-sw]', layer).forEach(b => b.onclick = () => { const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); setSetting(b.dataset.sw, on ? 'on' : 'off'); });
   const hear = $('#setHear', layer); if (hear) hear.onclick = () => speak('Howdy, partner! This is how directions and questions will sound. DNA is transcribed into mRNA, and mRNA is translated into a protein.', hear);
+  const wipeBox = $('#setWipeBox', layer);
+  $('#setWipe', layer).onclick = () => { wipeBox.hidden = false; $('#setWipe', layer).hidden = true; $('#setWipeNo', layer).focus(); wipeBox.scrollIntoView({ block: 'nearest' }); };
+  $('#setWipeNo', layer).onclick = () => { wipeBox.hidden = true; $('#setWipe', layer).hidden = false; $('#setWipe', layer).focus(); };
+  $('#setWipeYes', layer).onclick = () => {
+    // progress only: name, scores, reflection, Invaders high score. Accessibility settings live under their own key and stay.
+    store.data = { name: '', games: {} }; try { localStorage.removeItem(STORE_KEY); } catch (e) { }
+    close(); homeIntroDone = false; go(''); toast('Progress erased. Type your name to start fresh.', 3200);
+  };
   $('#setReset', layer).onclick = () => {
     for (const k in SET_OK) SET[k] = SET_OK[k][0]; saveSettings(); applySettings(); syncSMIL(); if (titleCtl) titleCtl.restart();
     requestAnimationFrame(() => dispatchEvent(new Event('resize'))); close(); openSettings(); toast('Settings reset');
@@ -3895,7 +3917,7 @@ function renderEvidence() {
         <ul class="ev-check" id="evck"></ul>
         <div class="ev-dl"><button class="btn big" id="evpdf" disabled>${icon('evidence', 20)} Download PDF</button><button class="btn big alt" id="evpng" disabled>${icon('evidence', 20)} Download PNG</button></div>
         <p class="ev-note" id="evnote"></p>
-        <div class="row ev-more"><button class="btn ghost small" id="cp">Copy summary text</button><button class="btn ghost small" id="clr">Reset my progress</button></div><div id="conf"></div>
+        <div class="row ev-more"><button class="btn ghost small" id="cp">Copy summary text</button><button class="btn ghost small" id="clr">Reset my scores</button></div><div id="conf"></div>
       </section>
     </div>
     <aside class="ev-side"><div class="ev-prev"><p class="kicker">Live preview</p><div class="ev-paper"><img id="evimg" alt="Preview of your downloadable evidence page"></div><p class="muted">This is exactly what your PNG and PDF will look like.</p></div></aside></div></div>`;
@@ -3921,7 +3943,7 @@ function renderEvidence() {
   $('#evpng').onclick = async e => { const b = e.currentTarget; busy(b, true); try { const cv = await evidenceCanvas(); await offerFile(fileBase() + '.png', await canvasBlob(cv, 'image/png')); } finally { busy(b, false); ready(); } };
   $('#evpdf').onclick = async e => { const b = e.currentTarget; busy(b, true); try { const cv = await evidenceCanvas(true), pages = []; for (let top = 0; top < cv.height; top += 2200) { const pc = document.createElement('canvas'); pc.width = 1700; pc.height = 2200; pc.getContext('2d').drawImage(cv, 0, top, 1700, 2200, 0, 0, 1700, 2200); pages.push({ jpg: new Uint8Array(await (await canvasBlob(pc, 'image/jpeg', .92)).arrayBuffer()), w: 1700, h: 2200 }); } await offerFile(fileBase() + '.pdf', pdfFromJpegs(pages)); } finally { busy(b, false); ready(); } };
   $('#cp').onclick = () => { const t = `Mustang Fold Rush · Standard 1.4 · ${store.data.name || 'Student'} · ${new Date().toLocaleDateString()}\n` + LEVELS.map(L => `Level ${L.n}: ` + GAMES.filter(x => x.level === L.n).map(x => `${x.title} ${G[x.id] ? G[x.id].best + '%' : '—'}`).join(', ')).join('\n') + (store.data.reflection ? `\n\nReflection (Self-Directed Learner):\n${store.data.reflection.trim()}` : ''); navigator.clipboard?.writeText(t).then(() => toast('Summary copied'), () => toast('Copy was blocked. Download the PDF instead.')); };
-  $('#clr').onclick = () => { $('#conf').innerHTML = `<div class="panel" style="margin-top:10px">Erase all saved scores in this browser? Your reflection stays. <button class="btn small" id="yes">Yes, reset</button> <button class="btn ghost small" id="no">Cancel</button></div>`; $('#yes').onclick = () => { store.data.games = {}; store.save(); renderEvidence(); }; $('#no').onclick = () => $('#conf').innerHTML = ''; };
+  $('#clr').onclick = () => { $('#conf').innerHTML = `<div class="panel" style="margin-top:10px">Erase all saved scores in this browser? Your name and reflection stay. (To erase everything, use Start over in Settings.) <button class="btn small" id="yes">Yes, reset</button> <button class="btn ghost small" id="no">Cancel</button></div>`; $('#yes').onclick = () => { store.data.games = {}; store.save(); renderEvidence(); }; $('#no').onclick = () => $('#conf').innerHTML = ''; };
   ready(); preview();
 }
 route();

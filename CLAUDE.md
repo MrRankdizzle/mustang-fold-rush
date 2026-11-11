@@ -26,7 +26,7 @@ Navigation uses `go(id)` and buttons with `data-go="id"`, `data-home` or `data-r
 
 Scores: `record(gameId, score, total)` saves the best percentage. Everything is saved in localStorage under the key `codonRodeo.v1` (name, games, reflection, Dogma Invaders settings). Never rename this key, or students lose their progress.
 
-Settings (the three-line menu button in every top bar, `data-settings`, `openSettings`) are saved separately under `mustangFoldRush.settings` so erasing scores never resets a student's accommodations: text size, light/dark, high contrast, Animations (Full/Calm), read aloud + speed, dyslexia-friendly text (Lexend), reading ruler, color-blind friendly. A small script in `<head>` applies them before the page paints. Search `SETTINGS MENU` (JS) and `SETTINGS (menu button)` (CSS).
+Settings (the three-line menu button in every top bar, `data-settings`, `openSettings`) are saved separately under `mustangFoldRush.settings` so erasing scores never resets a student's accommodations: text size, light/dark, high contrast, Animations (Full/Calm), read aloud + speed, dyslexia-friendly text (Lexend), reading ruler, color-blind friendly. Settings also holds "Start over from the beginning" (with a confirm step), which erases `codonRodeo.v1` (name, scores, reflection, Invaders high score) but keeps these settings. The My Evidence "Reset my scores" button erases scores only. A small script in `<head>` applies them before the page paints. Search `SETTINGS MENU` (JS) and `SETTINGS (menu button)` (CSS).
 
 My Evidence draws the downloadable PNG/PDF itself on a canvas (`evidenceCanvas`) and builds the PDF by hand (`pdfFromJpegs`). There are no PDF libraries. If you add a game, it appears in the evidence table automatically from `GAMES`.
 
