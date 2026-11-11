@@ -639,7 +639,8 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 .hero-band .btn.ghost svg *{stroke:#FFFFFF!important}
 .hero-band .title-row{justify-content:center;margin-top:14px}
 .hero-band .title-mustang{filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))}
-.hero-band .fr-mustang{fill:#8FCBF2!important;stroke:#0C1F3A!important}
+.hero-band .fr-mustang{fill:#8FCBF2!important;stroke:#8FCBF2!important}
+.hero-band .fr-mustang-edge{fill:#0C1F3A!important;stroke:#0C1F3A!important}
 .hero-band .fr-rush text{stroke:#0C1F3A!important}
 .hero-band #frBeads circle{stroke:#0C1F3A!important}
 .hero-band .subtitle{color:#CFE3F4}
@@ -3275,6 +3276,10 @@ function dogmaStrip() {
 }
 /* ---------- FOLD RUSH animated title: "FOLD" is a polypeptide chain that folds into letters ---------- */
 const TT = { top: 22, step: 9.5 };
+// MUSTANG is already at Bricolage's heaviest weight (800), so it is made bolder by growing each glyph outward
+// with a stroke in its own fill color (MB per side), with the navy outline (MO) drawn behind it. fitRush shrinks the
+// font by the same amount, so the word keeps the same width and height but has thicker strokes.
+const MB = 2.6, MO = 1.5;
 const TBEADS = [], TSTROKES = [], TLETTERS = [];
 (function buildTitle() {
   const lineP = (a, b) => { const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(L / TT.step)); return Array.from({ length: n + 1 }, (_, i) => [lerp(a[0], b[0], i / n), lerp(a[1], b[1], i / n)]); };
@@ -3297,7 +3302,7 @@ function titleCoil(L) { // a fresh random coil (denatured chain) around the lett
 }
 function titleSVG() {
   return `<svg class="fr-title" viewBox="0 -62 650 208" role="img" aria-label="Mustang Fold Rush">
-    <g transform="skewX(-9)"><text class="fr-mustang" x="6" y="-6" textLength="640" lengthAdjust="spacing" style="font:800 50px var(--font-display);fill:var(--carolina);stroke:var(--ink);stroke-width:2.5;paint-order:stroke">MUSTANG</text></g>
+    <g transform="skewX(-9)">${[['fr-mustang-edge', 'var(--ink)', 2 * (MB + MO)], ['fr-mustang', 'var(--carolina)', 2 * MB]].map(([c, col, sw]) => `<text class="${c}" x="6" y="-6" textLength="640" lengthAdjust="spacing" style="font:800 50px var(--font-display);fill:${col};stroke:${col};stroke-width:${sw};stroke-linejoin:miter;stroke-miterlimit:2.5">MUSTANG</text>`).join('')}</g>
     <defs><linearGradient id="frGold" gradientUnits="userSpaceOnUse" x1="330" y1="0" x2="650" y2="0" spreadMethod="repeat"><stop offset="0" stop-color="#B8860B"/><stop offset=".38" stop-color="#F2C744"/><stop offset=".5" stop-color="#FFF4C4"/><stop offset=".62" stop-color="#F2C744"/><stop offset="1" stop-color="#B8860B"/><animateTransform attributeName="gradientTransform" type="translate" from="-320 0" to="320 0" dur="3.4s" repeatCount="indefinite"/></linearGradient></defs>
     <g id="frChains">${TSTROKES.map((_, i) => `<path data-s="${i}" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linejoin:round;stroke-linecap:round"/>`).join('')}</g>
     <g id="frBeads">${TBEADS.map((b, i) => `<circle data-b="${i}" r="5.6" cx="${b.home[0]}" cy="${b.home[1]}" style="fill:${b.col};stroke:var(--ink);stroke-width:1.6"/>`).join('')}</g>
@@ -3315,7 +3320,12 @@ function fitRush(svg) {
     const top = TT.top - 5.6, bot = TT.top + 100 + 5.6, fs = (bot - top) / (asc + desc) * 100;
     t.style.fontSize = fs.toFixed(1) + 'px'; t.setAttribute('y', (bot - desc * fs / 100).toFixed(1));
     const w = t.getComputedTextLength(), W = Math.ceil(346 + w + 18); svg.setAttribute('viewBox', `0 -54 ${W} 200`);
-    const mt = svg.querySelector('.fr-mustang'); if (mt) { ctx.font = `800 100px ${getComputedStyle(mt).fontFamily}`; const mm = ctx.measureText('MUSTANG'); const capH = 60; const mfs = capH / mm.actualBoundingBoxAscent * 100; mt.style.fontSize = mfs.toFixed(1) + 'px'; mt.setAttribute('y', (TT.top - 5.6 - 8).toFixed(1)); mt.setAttribute('x', '10'); mt.setAttribute('textLength', String(Math.round(346 + w - 4))); }
+    const mts = svg.querySelectorAll('.fr-mustang, .fr-mustang-edge');
+    if (mts.length) {
+      // the visible box (glyph + MB growth) stays 60 tall and spans the same width as before
+      ctx.font = `800 100px ${getComputedStyle(mts[0]).fontFamily}`; const mm = ctx.measureText('MUSTANG'); const capH = 60 - 2 * MB; const mfs = capH / mm.actualBoundingBoxAscent * 100;
+      mts.forEach(mt => { mt.style.fontSize = mfs.toFixed(1) + 'px'; mt.setAttribute('y', (TT.top - 5.6 - 8 - MB).toFixed(1)); mt.setAttribute('x', String(10 + MB)); mt.setAttribute('textLength', String(Math.round(346 + w - 4 - 2 * MB))); });
+    }
   } catch (e) { }
 }
 function startTitle(svg) {
