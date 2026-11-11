@@ -164,6 +164,24 @@ input{font:inherit;color:inherit}
 
 /* label diagrams */
 .diagram{position:relative;width:100%;margin:0 auto}
+.ld{display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}
+.ld-main{min-width:0;overflow-x:auto}
+.ld-side{display:grid;gap:10px;align-content:start;min-width:0}
+.ld-side>*{margin:0}
+@media (min-width:1080px){
+  .ld{grid-template-columns:minmax(0,1fr) 250px;column-gap:18px;align-items:start}
+  .ld-watch{grid-column:1/-1}
+  /* fit the whole diagram on screen: width limited by the window height (gbar + directions + card padding ~ 180px) */
+  .ld .diagram{max-width:calc((100vh - 180px) * var(--ar,1.6));max-width:calc((100svh - 180px) * var(--ar,1.6))}
+  .ld-main{overflow:visible}
+  .ld-side{gap:8px}
+  .ld-side #ldTip{font-size:.82rem!important;line-height:1.35}
+  .ld-side .bank{align-content:flex-start;gap:6px;padding:8px}
+  .ld-side .bank .chip{padding:6px 10px;font-size:.88rem}
+  .ld-side .feedback:empty{display:none}
+  .ld-side .row{gap:8px}
+  .ld-side .row .btn{padding:8px 12px;font-size:.88rem}
+}
 .diagram>svg{display:block;width:100%;height:auto}
 .dz{position:absolute;transform:translate(-50%,-50%);min-width:96px;min-height:34px;border:2px dashed var(--carolina);border-radius:9px;background:var(--surface);display:grid;place-items:center;font-size:.8rem;font-weight:700;padding:2px 6px;text-align:center;color:var(--ink-2);line-height:1.15}
 .dz .chip{padding:4px 8px;font-size:.78rem;border-width:2px}
@@ -1640,13 +1658,16 @@ function DnD(root, onDropFn) {
 function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, watch, finale, restore, decoyNotes = {} }) {
   const [W, H] = vb;
   host.innerHTML = `
-    ${watch ? `<div class="row" style="margin-bottom:10px"><button class="btn ghost small" id="watchBtn">Watch it happen</button><span class="muted" id="watchNote" style="font-size:.9rem">Press to see the animation, then label the frozen diagram.</span></div>` : ''}
-    <div class="diagram" id="dg">${svg}</div>
-    <div class="caption-bar" id="cap" hidden aria-live="polite"></div>
-    <p class="muted" style="font-size:.9rem;margin:10px 0 6px">Drag each label to a dashed box, or tap a label and then tap a box. Tap a placed label to send it back.</p>
+    <div class="ld">
+    ${watch ? `<div class="row ld-watch"><button class="btn ghost small" id="watchBtn">Watch it happen</button><span class="muted" id="watchNote" style="font-size:.9rem">Press to see the animation, then label the frozen diagram.</span></div>` : ''}
+    <div class="ld-main"><div class="diagram" id="dg" style="--ar:${(W / H).toFixed(4)}">${svg}</div>
+    <div class="caption-bar" id="cap" hidden aria-live="polite"></div></div>
+    <div class="ld-side">
+    <p class="muted" id="ldTip" style="font-size:.9rem">Drag each label to a dashed box, or tap a label and then tap a box. Tap a placed label to send it back.</p>
     <div class="bank" id="bank" data-drop="bank"></div>
     <div class="feedback" id="fb"></div>
-    <div class="row"><button class="btn ghost" id="chk">Show wrong labels</button><button class="btn ghost" id="reset">Reset</button></div>`;
+    <div class="row" id="ldBtns"><button class="btn ghost" id="chk">Show wrong labels</button><button class="btn ghost" id="reset">Reset</button></div>
+    </div></div>`;
   const dg = $('#dg', host), bank = $('#bank', host), svgEl = $('svg', dg);
   // leaders
   const lead = svgEl.querySelector('#leaders') || (() => { const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'leaders'; svgEl.appendChild(g); return g; })();
@@ -1686,7 +1707,7 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, watch, 
     zones.forEach(z => $(`[data-zone="${z.id}"]`, dg).classList.add('ok'));
     $$('.chip', host).forEach(c => c.removeAttribute('data-drag'));
     fb.className = 'feedback ok'; fb.textContent = `All ${zones.length} labels correct!`;
-    if (!finale) { bank.style.display = 'none'; const tip = host.querySelector('p.muted'); if (tip) tip.style.display = 'none'; const r = $('.row', host); if (r) r.style.display = 'none'; }
+    if (!finale) { bank.style.display = 'none'; $('#ldTip', host).style.display = 'none'; $('#ldBtns', host).style.display = 'none'; }
     onCheck && onCheck(firstScore ?? zones.length, zones.length);
     if (finale) setTimeout(runFinale, 500); else confetti();
   }
@@ -1701,10 +1722,10 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, watch, 
   let running = false;
   async function runFinale() {
     if (running) return; running = true;
-    const cap = $('#cap', host), row = $('.row', host);
+    const cap = $('#cap', host), row = $('#ldBtns', host);
     const token = { cancel: false }; onLeave(() => token.cancel = true);
     $$('.dz', dg).forEach(z => z.style.visibility = 'hidden'); lead.style.visibility = 'hidden';
-    bank.style.display = 'none'; host.querySelector('p.muted').style.display = 'none'; row.style.display = 'none';
+    bank.style.display = 'none'; $('#ldTip', host).style.display = 'none'; row.style.display = 'none';
     fb.className = 'feedback ok'; fb.textContent = 'All labels correct! Watch it happen...';
     dg.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await finale(svgEl, cap, token);
@@ -2462,17 +2483,20 @@ reg({
   id: 'transcribe', level: 2, icon: 'transcribe', title: 'Label: Transcription', blurb: 'Label transcription inside the nucleus, then watch it happen.',
   how: 'We are zoomed in inside the nucleus. Drag the eight labels onto the diagram. The moment they are all right, you will watch transcription happen, from RNA polymerase arriving to the mRNA leaving the nucleus.',
   run(arena, g) {
-    const sc = txFrame(TX_STATIC);
+    const sc = txFrame(TX_STATIC), mt = sc.pos.tail;
     const svg = `<svg viewBox="0 0 900 560" role="img" aria-label="Transcription inside the nucleus">${floatCSS}<g id="bg">${txBG()}</g><g id="scene">${sc.s}</g><g id="leaders"></g></svg>`;
     const zones = [
-      { id: 'pol', label: 'RNA polymerase', x: 620, y: 140, px: 540, py: 262 },
-      { id: 'mrna', label: 'mRNA', x: 300, y: 36, px: sc.pos.tailEnd[0], py: sc.pos.tailEnd[1] },
-      { id: 'u', label: 'Uracil', x: 210, y: 215, px: sc.pos.u[0], py: sc.pos.u[1] },
+      // RNA polymerase: point into the open middle of the enzyme, well away from the DNA strands and mRNA
+      { id: 'pol', label: 'RNA polymerase', x: 620, y: 140, px: 478, py: 288 },
+      // mRNA: touch the backbone between the last two bases (not on a letter)
+      { id: 'mrna', label: 'mRNA', x: 300, y: 36, px: (mt[mt.length - 1][0] + mt[mt.length - 2][0]) / 2, py: (mt[mt.length - 1][1] + mt[mt.length - 2][1]) / 2 },
+      // Uracil: touch the left edge of the U square so the letter stays visible
+      { id: 'u', label: 'Uracil', x: 210, y: 215, px: sc.pos.u[0] - 16, py: sc.pos.u[1] + 2 },
       { id: 'pore', label: 'Nuclear pore', x: 836, y: 36, px: TX_EXIT[0], py: TX_EXIT[1] },
-      { id: 'dna', label: 'DNA double helix', x: 130, y: 532, px: 180, py: 312 },
+      { id: 'dna', label: 'DNA double helix', x: 100, y: 532, px: 103, py: 312 },   // straight up between two rungs, clear of the free nucleotides
       { id: 'nucleus', label: 'Nucleus', x: 305, y: 532, px: 335, py: 455 },
-      { id: 'tmp', label: 'Template strand', x: 475, y: 532, px: 430, py: 397 },
-      { id: 'nuc', label: 'Free RNA nucleotide', x: 660, y: 532, px: 705, py: 458 }
+      { id: 'tmp', label: 'Template strand', x: 475, y: 532, px: 441, py: 397 },   // between two bases so no letter is covered
+      { id: 'nuc', label: 'Free RNA nucleotide', x: 660, y: 532, px: 707, py: 474 }
     ];
     const wrap = document.createElement('div'); wrap.style.overflowX = 'auto'; arena.appendChild(wrap);
     labelDiagram(wrap, {
@@ -2497,9 +2521,9 @@ reg({
       { id: 'codon', label: 'Codon', x: 580, y: 432, px: cx0(7) + 39, py: 370 },
       { id: 'trna', label: 'tRNA', x: 830, y: 150, px: 734, py: 116 },
       { id: 'anti', label: 'Anticodon', x: 830, y: 250, px: 763, py: 177 },
-      { id: 'aa', label: 'Amino acid', x: 650, y: 36, px: 716, py: 68 },
-      { id: 'bond', label: 'Peptide bond', x: 470, y: 36, px: SITE.P + 39, py: 222 },
-      { id: 'chain', label: 'Polypeptide chain', x: 140, y: 110, px: cb[0], py: cb[1] }
+      { id: 'aa', label: 'Amino acid', x: 835, y: 62, px: 745, py: 68 },   // touches the right edge of the Pro bead
+      { id: 'bond', label: 'Peptide bond', x: 545, y: 36, px: SITE.P + 39, py: 222 },
+      { id: 'chain', label: 'Polypeptide chain', x: 360, y: 40, px: cb[0], py: cb[1] }   // straight down onto the bracket: never along it, never across the Met bead
     ];
     const wrap = document.createElement('div'); wrap.style.overflowX = 'auto'; arena.appendChild(wrap);
     labelDiagram(wrap, {

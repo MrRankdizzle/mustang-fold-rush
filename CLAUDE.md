@@ -41,6 +41,7 @@ My Evidence draws the downloadable PNG/PDF itself on a canvas (`evidenceCanvas`)
 - School colors: Carolina blue `#4B9CD3`, deep Carolina `#24679F`, navy `#13294B`, sky blue, white, with gold `#F2C744` accents. The mascot is Marty the Mustang.
 - Keep light and dark mode working (color tokens on `:root`, dark overrides under `prefers-color-scheme` and `[data-theme="dark"]`).
 - Must work at phone width (390px) with no sideways scrolling, and on Chromebook touchscreens (tap as well as drag).
+- Label-the-diagram activities (`labelDiagram`): on screens 1080px and wider the label bank sits to the right of the diagram, and the diagram's height is capped so the whole activity fits on a Chromebook screen without scrolling. A leader line's dot (`px, py`) must never sit on the letter or part being labeled (touch its edge, or the backbone between bases), and the line itself must not cross other letters or beads. Zoom in on a screenshot to check.
 - The top game bar stays pinned so the Menu button is always reachable. Keep it that way in any new screen. New top bars also get `${setBtn()}` so Settings is always reachable.
 
 ## Accessibility and smooth animation (please follow)
