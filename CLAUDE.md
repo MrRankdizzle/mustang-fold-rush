@@ -7,7 +7,7 @@ Review-games web app for Little Chute High School Biology, Essential Standard 1.
 - The whole app is ONE file: `index.html` (HTML + CSS + vanilla JavaScript, no frameworks, no build step, no npm). Keep it that way.
 - Hosted on Vercel from this GitHub repo. Every push to `main` redeploys automatically in about a minute.
 - Other files: `favicon.svg`, `apple-touch-icon.png` (Mustang badge icons), `README.md`.
-- Only outside resource: Google Fonts (Atkinson Hyperlegible for body, Bricolage Grotesque for display, Press Start 2P for the Dogma Invaders arcade look, JetBrains Mono).
+- Only outside resource: Google Fonts (Atkinson Hyperlegible for body, Bricolage Grotesque for display, Press Start 2P for the Dogma Invaders arcade look, JetBrains Mono, Lexend for the dyslexia-friendly setting).
 
 ## Finding your way around index.html
 
@@ -26,6 +26,8 @@ Navigation uses `go(id)` and buttons with `data-go="id"`, `data-home` or `data-r
 
 Scores: `record(gameId, score, total)` saves the best percentage. Everything is saved in localStorage under the key `codonRodeo.v1` (name, games, reflection, Dogma Invaders settings). Never rename this key, or students lose their progress.
 
+Settings (the three-line menu button in every top bar, `data-settings`, `openSettings`) are saved separately under `mustangFoldRush.settings` so erasing scores never resets a student's accommodations: text size, light/dark, high contrast, Animations (Full/Calm), read aloud + speed, dyslexia-friendly text (Lexend), reading ruler, color-blind friendly. A small script in `<head>` applies them before the page paints. Search `SETTINGS MENU` (JS) and `SETTINGS (menu button)` (CSS).
+
 My Evidence draws the downloadable PNG/PDF itself on a canvas (`evidenceCanvas`) and builds the PDF by hand (`pdfFromJpegs`). There are no PDF libraries. If you add a game, it appears in the evidence table automatically from `GAMES`.
 
 ## Mr. Rankin's design rules (please follow)
@@ -39,7 +41,18 @@ My Evidence draws the downloadable PNG/PDF itself on a canvas (`evidenceCanvas`)
 - School colors: Carolina blue `#4B9CD3`, deep Carolina `#24679F`, navy `#13294B`, sky blue, white, with gold `#F2C744` accents. The mascot is Marty the Mustang.
 - Keep light and dark mode working (color tokens on `:root`, dark overrides under `prefers-color-scheme` and `[data-theme="dark"]`).
 - Must work at phone width (390px) with no sideways scrolling, and on Chromebook touchscreens (tap as well as drag).
-- The top game bar stays pinned so the Menu button is always reachable. Keep it that way in any new screen.
+- The top game bar stays pinned so the Menu button is always reachable. Keep it that way in any new screen. New top bars also get `${setBtn()}` so Settings is always reachable.
+
+## Accessibility and smooth animation (please follow)
+
+- Motion: never read the device's `prefers-reduced-motion`. Many school computers have it on, and following it froze half the animations (the cause of the "choppy" reports). Calm motion comes only from the Settings menu: use `.rm` in CSS and `reducedMotion()` in JS for any new animation.
+- Color-blind friendly (`.cb` on `<html>`): anything that shows right/wrong or groups by color needs a non-color cue too (the check/X badges under `COLOR-BLIND FRIENDLY` in the CSS cover `.ok/.no/.hit/.miss` on chips, options, boxes, and cells). Use the `--good`, `--bad`, and base tokens (`--bA`...), not raw hex, so the color-blind palette applies.
+- Read aloud: `sayBtn(text, label)` makes a speaker button (shown only when Read aloud is on). Empty text reads the button's parent. Game directions and multiple-choice questions already have one.
+- Size new text in rem so the Text size setting scales it.
+- Animate with `transform` and `opacity` only. Don't animate `left`, `top`, `width`, `height`, `box-shadow`, or `background-position` in anything that runs continuously, and don't add `backdrop-filter`.
+- Pointer-move handlers (drag) should store the latest position and do the work once per `requestAnimationFrame`.
+- JS animation loops: book the next frame first, use real elapsed time (not frame counts), and stop when off screen (`pauseOffscreen`).
+- For an SVG scene redrawn every frame from a markup string, `morph(el, html)` patches only what changed. It helped the transcription and translation finales about 30%, but was slower for the protein-folding scenes (most attributes change every frame), so measure before switching.
 
 ## Before you push
 

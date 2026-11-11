@@ -13,7 +13,14 @@
 <title>Mustang Fold Rush</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Press+Start+2P&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Press+Start+2P&family=JetBrains+Mono:wght@500;700&family=Lexend:wght@400;600;700&display=swap">
+<script>
+/* Settings menu choices (theme, text size, motion, reading and color options) live under their own key, apart from
+   game progress in codonRodeo.v1, and are applied here before the page paints so nothing flashes. */
+try{const d=document.documentElement,o=JSON.parse(localStorage.getItem('mustangFoldRush.settings')||'{}');
+  if(o.theme==='light'||o.theme==='dark')d.dataset.theme=o.theme;if(o.text==='large'||o.text==='xl')d.dataset.text=o.text;
+  d.classList.toggle('rm',o.motion==='reduce');d.classList.toggle('cb',o.cvd==='cb');d.classList.toggle('dys',o.dys==='on');d.classList.toggle('hc',o.hc==='on');d.classList.toggle('tts',o.tts==='on')}catch(e){}
+</script>
 <style>
 /* Layout concept: a rodeo "program" — a menu of corrals (levels) holding game cards; each game opens as a full working arena with a slim status bar. */
 :root{
@@ -55,7 +62,7 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{min-height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:1rem;line-height:1.5;-webkit-font-smoothing:antialiased;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
 h1,h2,h3,h4{font-family:var(--font-display);line-height:1.15;margin:0;text-wrap:balance;letter-spacing:-.01em}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -151,7 +158,7 @@ input{font:inherit;color:inherit}
 .chip.ok{border-color:var(--good);background:var(--good-bg)}
 .chip.no{border-color:var(--bad);background:var(--bad-bg)}
 .chip.used{opacity:.35;pointer-events:none}
-.drag-ghost{position:fixed;z-index:80;pointer-events:none;transform:translate(-50%,-50%) rotate(-3deg);box-shadow:var(--shadow)}
+.drag-ghost{position:fixed;left:0;top:0;z-index:80;pointer-events:none;transform:translate3d(var(--gx,-999px),var(--gy,-999px),0) translate(-50%,-50%) rotate(-3deg);box-shadow:var(--shadow);will-change:transform}
 .bank{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border-radius:12px;background:var(--surface-2);min-height:56px}
 .drop-hot{outline:3px dashed var(--carolina)!important;outline-offset:2px}
 
@@ -347,7 +354,6 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 .bar i{display:block;height:100%;background:var(--carolina)}
 
 @media (max-width:760px){.hero{grid-template-columns:minmax(0,1fr)}}
-@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 /* ================= LEVEL 1 · animated vocab games ================= */
 /* egg scene */
@@ -517,7 +523,7 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 @keyframes dockIn{0%{transform:translateY(-40px) scale(1.15);opacity:.4}100%{transform:none;opacity:1}}
 .trna-leave{animation:trnaLeave .45s ease forwards}
 @keyframes trnaLeave{to{transform:translate(-50px,-36px) rotate(-14deg);opacity:0}}
-.drag-trna{position:fixed;z-index:85;pointer-events:none;transform:translate(-50%,-75%);filter:drop-shadow(0 8px 14px rgba(0,0,0,.28))}
+.drag-trna{position:fixed;left:0;top:0;z-index:85;pointer-events:none;transform:translate3d(var(--gx,-999px),var(--gy,-999px),0) translate(-50%,-75%);filter:drop-shadow(0 8px 14px rgba(0,0,0,.28));will-change:transform}
 .wheel-wrap{position:relative}
 .wheel svg{touch-action:none}
 .wheel .wg.dim{opacity:.22}
@@ -749,7 +755,7 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 .intro .tl:nth-child(1){animation-delay:1.7s}.intro .tl:nth-child(2){animation-delay:1.82s}.intro .tl:nth-child(3){animation-delay:1.94s}
 .intro .ring-fg{animation:ringIn 1.2s cubic-bezier(.2,.8,.2,1) 1.6s both}
 .welcome.first .w-name input{animation:none}
-@media (prefers-reduced-motion: reduce){.intro *{animation:none!important}}
+.rm .intro *{animation:none!important}
 /* responsive */
 @media (max-width:900px){.hb-grid{grid-template-columns:minmax(0,1fr)}.welcome.back{grid-template-columns:auto minmax(0,1fr)}.w-levels{grid-column:1/-1;border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
 @media (max-width:760px){.welcome.first{grid-template-columns:minmax(0,1fr)}.hero-band{border-radius:22px;padding-bottom:84px}.hb-grid{margin-top:18px}}
@@ -807,9 +813,9 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 /* title + debrief */
 .inv-start{min-height:clamp(460px,66vh,620px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:30px 16px;text-align:center;
   background:radial-gradient(70% 50% at 50% 0%,rgba(75,156,211,.28),transparent 65%),radial-gradient(50% 40% at 0% 100%,rgba(240,106,154,.14),transparent 60%),#050A18}
-.inv-starbg{position:absolute;inset:0;pointer-events:none;opacity:.85;background-size:260px 260px;animation:starFall 22s linear infinite;
+.inv-starbg{position:absolute;inset:-260px 0 0 0;pointer-events:none;opacity:.85;background-size:260px 260px;animation:starFall 22s linear infinite;will-change:transform;
   background-image:radial-gradient(1.5px 1.5px at 12% 18%,#FFFFFF 60%,transparent 64%),radial-gradient(1px 1px at 72% 34%,#FFFFFF 60%,transparent 64%),radial-gradient(1px 1px at 40% 70%,#CFE3F4 60%,transparent 64%),radial-gradient(2px 2px at 86% 82%,#FFFFFF 50%,transparent 60%),radial-gradient(1px 1px at 25% 50%,#9FD3F5 60%,transparent 64%),radial-gradient(1.2px 1.2px at 58% 10%,#FFFFFF 60%,transparent 64%),radial-gradient(1px 1px at 92% 52%,#FFFFFF 60%,transparent 64%)}
-@keyframes starFall{to{background-position:0 260px}}
+@keyframes starFall{to{transform:translateY(260px)}}
 .inv-start>*:not(.inv-starbg){position:relative}
 .inv-title{display:grid;justify-items:center;gap:12px;line-height:1}
 .inv-title span{font:400 clamp(.75rem,2.6vw,1.15rem) var(--pix);color:#9FD3F5;letter-spacing:.3em;padding-left:.3em}
@@ -855,7 +861,7 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
   .inv-rays button{min-height:62px}.inv-rays button small{font-size:.66rem}
   .inv-tip{bottom:80px;font-size:.8rem}
 }
-@media (prefers-reduced-motion: reduce){.inv-starbg,.inv.demo,.inv-launch,.inv-tip{animation:none}}
+.rm :is(.inv-starbg,.inv.demo,.inv-launch,.inv-tip){animation:none}
 
 /* keyboard keycaps (Dogma Invaders) */
 .kc{display:inline-grid;place-items:center;min-width:1.95em;height:1.95em;padding:0 .45em;margin:0 2px;border-radius:7px;font:400 .78rem/1 var(--pix);color:#0B1730;vertical-align:middle;
@@ -889,7 +895,7 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 .inv-legend .kc{font-size:.6rem;margin-right:4px}
 @media (max-width:640px){.inv-controls{grid-template-columns:minmax(0,1fr)}.ic-card{grid-template-columns:auto 1fr;justify-items:start;text-align:left;align-items:center;column-gap:14px}.ic-card h3{grid-column:1/-1}.ic-card.fire .kc{min-width:42px;height:42px;font-size:1.05rem}}
 @media (max-width:540px){.inv-rays button{grid-template-columns:auto;row-gap:5px;padding:8px 3px}.inv-rays .rl{text-align:center}.kc.big{min-width:30px;height:30px;font-size:.75rem;border-radius:7px;justify-self:center}}
-@media (prefers-reduced-motion: reduce){.ic-card.fire .kc,.inv-rays.nudge .kc{animation:none}}
+.rm :is(.ic-card.fire .kc,.inv-rays.nudge .kc){animation:none}
 .inv-banner .bn-keys{font:700 .95rem var(--font-body);color:#FFFFFF;letter-spacing:0}
 .inv-banner .bn-keys i{font:800 .9rem var(--font-body);letter-spacing:.03em}
 .inv-banner .bn-keys .kc{font-size:.85rem}
@@ -971,7 +977,7 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 @media (max-width:560px){.ev-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.ev-table2 td.w{display:none}.ev-table2 td.g{width:auto}}
 
 /* sticky game bar: Menu always reachable */
-.gbar{position:sticky;top:0;z-index:40;flex-wrap:nowrap;margin-inline:-16px;padding:12px 16px 10px;background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 70%,transparent);margin-bottom:10px}
+.gbar{position:sticky;top:0;z-index:40;flex-wrap:nowrap;margin-inline:-16px;padding:12px 16px 10px;background:color-mix(in srgb,var(--bg) 97%,transparent);box-shadow:0 1px 0 color-mix(in srgb,var(--line) 70%,transparent);margin-bottom:10px}
 .gbar h1{min-width:0;flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gbar .btn{flex:none}
 .gbar .btn svg{flex:none}
@@ -1011,6 +1017,108 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 .blindfold span{color:#CFE3F4;font-weight:700}
 .pin-prompt .n svg{width:26px;height:26px;display:block}
 @media (max-width:560px){.pin-intro{font-size:.88rem;padding:8px 14px 8px 8px;gap:10px;border-radius:18px}.pi-ic{width:28px;height:28px}.pi-dots{display:none}}
+
+/* =================== SMOOTH ANIMATION =================== */
+/* Pictures that redraw every frame get their own GPU layer, so each frame repaints only that picture and not the
+   gradients, masks, and shadows around it (the hero band especially). Keep this list short: every layer costs memory. */
+.fr-title,.title-mustang,.dogma-card,.scene.live svg{will-change:transform}
+.ribo-glide{will-change:transform}
+/* paused while scrolled out of view (set from JS) */
+.offscreen *{animation-play-state:paused!important}
+
+/* =================== SETTINGS (menu button) =================== */
+html[data-text="large"]{font-size:112.5%}html[data-text="xl"]{font-size:125%}
+.set-btn{flex:none;display:inline-flex;align-items:center;gap:8px}
+.set-btn svg{width:20px;height:20px}
+.gbar .set-btn,.ev-top .set-btn{padding-inline:9px}
+.set-scrim{position:fixed;inset:0;z-index:100;background:rgba(9,20,38,.5);animation:setFade .2s ease}
+.set-drawer{position:fixed;top:0;right:0;bottom:0;z-index:101;width:min(430px,100%);overflow:auto;overscroll-behavior:contain;background:var(--surface);color:var(--ink);border-left:1px solid var(--line);box-shadow:-18px 0 50px rgba(9,20,38,.3);
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 20px calc(env(safe-area-inset-bottom,0px) + 32px);display:grid;gap:20px;align-content:start;animation:setIn .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes setIn{from{transform:translateX(100%)}}
+@keyframes setFade{from{opacity:0}}
+.set-head{display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:-16px;margin:-16px -20px 0;padding:16px 20px 12px;background:var(--surface);z-index:1;border-bottom:1px solid var(--line)}
+.set-head h2{font-size:1.4rem;display:flex;align-items:center;gap:10px}
+.set-head h2 svg{width:26px;height:26px;color:var(--carolina-deep)}
+.set-sec{display:grid;gap:16px}
+.set-sec>h3{font:800 .74rem/1.2 var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--carolina-deep);padding-bottom:6px;border-bottom:2px solid var(--line)}
+.set-row{display:grid;gap:8px;border:0;margin:0;padding:0;min-width:0}
+.set-row>legend{font-weight:700;padding:0;margin-bottom:8px}
+.set-note{margin:-4px 0 0;font-size:.86rem;color:var(--ink-2);line-height:1.4}
+.set-seg{display:flex;flex-wrap:wrap;gap:6px}
+.set-seg label{position:relative;flex:1 1 auto;display:grid;place-items:center;text-align:center;padding:9px 10px;min-height:44px;border-radius:10px;border:2px solid var(--line);background:var(--surface-2);font-weight:700;font-size:.92rem;line-height:1.2;cursor:pointer}
+.set-seg input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.set-seg label.on,.set-seg label:has(input:checked){background:var(--carolina-deep);border-color:var(--carolina-deep);color:var(--on-accent)}
+.set-seg label:has(input:focus-visible){outline:3px solid var(--carolina);outline-offset:2px}
+.set-seg .aa{font-family:var(--font-display);font-weight:800;line-height:1}
+.set-sw{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;text-align:left;background:none;border:0;padding:0;color:var(--ink)}
+.set-sw b{display:block;font-size:1rem}
+.set-sw .set-note{display:block;margin:2px 0 0}
+.sw-track{flex:none;width:54px;height:32px;border-radius:999px;background:var(--line);position:relative;transition:background .2s}
+.sw-track::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
+.set-sw[aria-checked="true"] .sw-track{background:var(--carolina-deep)}
+.set-sw[aria-checked="true"] .sw-track::after{transform:translateX(22px)}
+.set-sw:focus-visible{outline:3px solid var(--carolina);outline-offset:4px;border-radius:8px}
+.set-try{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.set-foot{font-size:.84rem;color:var(--ink-2);margin:0}
+.set-reset{justify-self:start}
+.set-preview{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.86rem;color:var(--ink-2)}
+.set-preview .base{width:30px;height:34px;font-size:.95rem}
+.set-preview .chip{cursor:default;padding:5px 10px}
+
+/* =================== READ ALOUD =================== */
+.say{display:none}
+.tts .say{display:inline-grid;place-items:center;flex:none;width:36px;height:36px;padding:0;margin-right:8px;border-radius:50%;border:2px solid var(--line);background:var(--surface);color:var(--carolina-deep);vertical-align:middle;cursor:pointer}
+.tts .say:hover{border-color:var(--carolina)}
+.say svg{width:18px;height:18px}
+.say.talking{background:var(--carolina-deep);border-color:var(--carolina-deep);color:var(--on-accent)}
+.hero-band .say{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.35);color:#FFFFFF}
+.tts .howto{display:flex;align-items:flex-start;gap:2px}
+.tts .qcard h3{display:flex;align-items:flex-start;gap:2px}
+.say-pop{position:fixed;left:0;top:0;z-index:96;display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;border:0;background:var(--ink);color:var(--bg);font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.say-pop svg{width:18px;height:18px}
+
+/* =================== READING RULER =================== */
+.ruler{position:fixed;left:0;right:0;top:0;height:2.6em;margin-top:-1.3em;pointer-events:none;z-index:99;background:color-mix(in srgb,#F2C744 16%,transparent);border-block:2px solid color-mix(in srgb,#F2C744 60%,transparent);will-change:transform}
+
+/* =================== DYSLEXIA-FRIENDLY READING =================== */
+.dys{--font-body:'Lexend','Atkinson Hyperlegible',system-ui,sans-serif}
+.dys body{letter-spacing:.03em;word-spacing:.12em;line-height:1.75}
+.dys :is(p,li,.howto,.clue-card,.qcard h3,.opt,.hb-quote,.card p,.gcard p){line-height:1.75;text-align:left}
+.dys *{font-style:normal!important}
+.dys :is(.mono,.base,.xc,.acell,.slot,.rotor,.codon-table,.inv-cab,.letters,.kb,svg,.lvl-badge,.dz-num){letter-spacing:normal;word-spacing:normal}
+
+/* =================== HIGH CONTRAST =================== */
+:root.hc{--ink-2:#1F3657;--line:#7E95B0;--carolina-deep:#1A5288}
+@media (prefers-color-scheme: dark){:root.hc:not([data-theme="light"]){--ink-2:#DCE8F4;--line:#8AA5C4;--carolina-deep:#BFE0F7}}
+:root.hc[data-theme="dark"]{--ink-2:#DCE8F4;--line:#8AA5C4;--carolina-deep:#BFE0F7}
+.hc .muted{color:var(--ink)}
+.hc :is(.btn.ghost,.chip,.opt,.gcard,.dz,.sortitem,.pic,.bin){border-width:2px}
+.hc :focus-visible{outline-width:4px!important;outline-color:var(--ink)!important}
+
+/* =================== COLOR-BLIND FRIENDLY =================== */
+/* Right/wrong turn blue/orange (safe for red-green and blue-yellow color blindness), bases get a palette that differs in
+   lightness as well as hue, and every right/wrong state also gets a check or X badge so color never carries meaning alone. */
+:root{--cb-ok:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --cb-no:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 4.5l7 7M11.5 4.5l-7 7' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E")}
+:root.cb{--good:#0067A3;--good-bg:#DCEBF7;--bad:#C2410C;--bad-bg:#FCE5D6;--bA:#C85200;--bU:#2B8FCF;--bT:#1F77B4;--bG:#0B3C8C;--bC:#F0E442}
+@media (prefers-color-scheme: dark){:root.cb:not([data-theme="light"]){--good:#56B4E9;--good-bg:#12324A;--bad:#F59E52;--bad-bg:#45290F}}
+:root.cb[data-theme="dark"]{--good:#56B4E9;--good-bg:#12324A;--bad:#F59E52;--bad-bg:#45290F}
+.cb :is(.chip,.opt,.pic,.sortitem,.letters button,.codon-table td button,.acell,.base):is(.ok,.no,.hit,.miss,.wrong):not(.drag-ghost){position:relative}
+.cb :is(.chip.ok,.opt.ok,.pic.ok,.sortitem.ok,.dz.ok,.letters button.hit)::after,
+.cb :is(.chip.no,.opt.no,.pic.no,.sortitem.no,.dz.no,.letters button.miss,.base.wrong)::after{content:"";position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;background:var(--good) var(--cb-ok) center/13px no-repeat;box-shadow:0 0 0 2px var(--surface);pointer-events:none;z-index:3}
+.cb :is(.chip.no,.opt.no,.pic.no,.sortitem.no,.dz.no,.letters button.miss,.base.wrong)::after{background:var(--bad) var(--cb-no) center/12px no-repeat}
+.cb .dz .chip:is(.ok,.no)::after{display:none}
+/* small cells inside scrolling grids: the badge tucks into the corner */
+.cb :is(.xc.ok,.acell.ok,.codon-table td button.hit)::after,
+.cb :is(.xc.no,.acell.no,.codon-table td button.miss)::after{content:"";position:absolute;top:1px;right:1px;width:11px;height:11px;border-radius:50%;background:var(--good) var(--cb-ok) center/8px no-repeat;pointer-events:none;z-index:2}
+.cb :is(.xc.no,.acell.no,.codon-table td button.miss)::after{background:var(--bad) var(--cb-no) center/8px no-repeat}
+.cb .clues li.solved{text-decoration:line-through}
+.cb .sdots i.cur{box-shadow:0 0 0 2px var(--ink)}
+.cb .tk-dock.hot{border-style:double;border-width:4px}
+
+/* =================== REDUCED MOTION (only when the student picks Reduced in Settings) =================== */
+/* Never driven by the device's own reduce-motion flag: many school computers have it on, which froze the animations. */
+.rm *,.rm *::before,.rm *::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.001ms!important;transition-delay:0s!important;scroll-behavior:auto!important}
 
 </style>
 </head>
@@ -1157,19 +1265,69 @@ function toast(msg, ms = 1800) {
   t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), ms);
 }
 function bump(el, cls = 'shake') { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+let confettiRAF = 0;
 function confetti(n = 120) {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  let c = $('#confetti'); if (!c) { c = document.createElement('canvas'); c.id = 'confetti'; document.body.appendChild(c); }
-  const ctx = c.getContext('2d'); c.width = innerWidth; c.height = innerHeight;
+  if (reducedMotion()) return;
+  let c = $('#confetti'); if (!c) { c = document.createElement('canvas'); c.id = 'confetti'; c.setAttribute('aria-hidden', 'true'); document.body.appendChild(c); }
+  cancelAnimationFrame(confettiRAF);
+  const W = innerWidth, H = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + 'px'; c.style.height = H + 'px';
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cols = ['#4B9CD3', '#A9D4F2', '#FFFFFF', '#13294B', '#E2628C', '#3E9E66', '#E3B021'];
-  const ps = Array.from({ length: n }, () => ({ x: c.width / 2 + (Math.random() - .5) * 200, y: c.height * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, s: 5 + Math.random() * 6, r: Math.random() * 6, col: pick(cols), life: 0 }));
-  let f = 0;
-  (function step() {
-    ctx.clearRect(0, 0, c.width, c.height);
-    ps.forEach(p => { p.vy += .4; p.x += p.vx; p.y += p.vy; p.r += .2; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.col; ctx.strokeStyle = '#13294B33'; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.strokeRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); });
-    if (++f < 140) requestAnimationFrame(step); else ctx.clearRect(0, 0, c.width, c.height);
-  })();
+  const ps = Array.from({ length: n }, () => ({ x: W / 2 + (Math.random() - .5) * 200, y: H * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, s: 5 + Math.random() * 6, r: Math.random() * 6, col: pick(cols) }));
+  // speeds are "per 1/60 s"; k scales each step by the real time since the last frame
+  let last = performance.now(), age = 0;
+  const step = now => {
+    const k = Math.min(3, (now - last) / (1000 / 60)); last = now; age += k;
+    ctx.clearRect(0, 0, W, H); ctx.strokeStyle = '#13294B33';
+    ps.forEach(p => { p.vy += .4 * k; p.x += p.vx * k; p.y += p.vy * k; p.r += .2 * k; if (p.y > H + 20) return; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.col; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.strokeRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); });
+    if (age < 140) confettiRAF = requestAnimationFrame(step); else { ctx.clearRect(0, 0, W, H); confettiRAF = 0; }
+  };
+  confettiRAF = requestAnimationFrame(step);
 }
+/* Redraw an SVG group from a markup string without rebuilding it. Animations that call this every frame used to do
+   el.innerHTML = ..., which throws away and recreates every shape 60 times a second (choppy on Chromebooks). This
+   parses the new markup off-screen and copies over only the attributes and text that changed. If the shapes don't
+   line up (something was added or removed), that part is simply replaced. Measured: about 30% less work per frame for
+   the transcription and translation finales. The protein-folding scenes change most attributes every frame, where a
+   plain innerHTML rebuild is faster, so they keep innerHTML. */
+function morph(el, html) {
+  if (el._mh === html && el._ml === el.lastChild) return;
+  const tmp = el._mt || (el._mt = document.createElementNS(el.namespaceURI || 'http://www.w3.org/2000/svg', el.localName || 'g'));
+  tmp.innerHTML = html; morphKids(el, tmp); tmp.textContent = '';
+  el._mh = html; el._ml = el.lastChild;
+}
+function morphKids(a, b) {
+  const ak = a.childNodes, bk = [...b.childNodes];
+  if (ak.length !== bk.length) { a.replaceChildren(...bk); return; }
+  for (let i = 0; i < bk.length; i++) {
+    const x = ak[i], y = bk[i];
+    if (x.nodeType !== y.nodeType || x.nodeName !== y.nodeName) { a.replaceChild(y, x); continue; }
+    if (x.nodeType === 3) { if (x.data !== y.data) x.data = y.data; continue; }
+    if (x.nodeType !== 1) continue;
+    if (x.localName === 'style') { if (x.textContent !== y.textContent) x.textContent = y.textContent; continue; }
+    const ya = y.attributes, xa = x.attributes, n = ya.length;
+    if (xa.length === n) { // usual case: same attributes in the same order, so compare them side by side
+      for (let j = 0; j < n; j++) { const at = ya[j], xt = xa[j]; if (xt.name === at.name) { if (xt.value !== at.value) xt.value = at.value; } else if (x.getAttribute(at.name) !== at.value) x.setAttribute(at.name, at.value); }
+    } else {
+      for (let j = 0; j < n; j++) { const at = ya[j]; if (x.getAttribute(at.name) !== at.value) x.setAttribute(at.name, at.value); }
+      for (let j = xa.length - 1; j >= 0; j--) { if (!y.hasAttribute(xa[j].name)) x.removeAttribute(xa[j].name); }
+    }
+    morphKids(x, y);
+  }
+}
+/* Pause a picture's CSS and SVG animations while it is scrolled out of view, so off-screen work doesn't steal frames. */
+function pauseOffscreen(el, onChange) {
+  if (!el || !('IntersectionObserver' in window)) return () => { };
+  const io = new IntersectionObserver(es => {
+    const v = es[es.length - 1].isIntersecting; el.classList.toggle('offscreen', !v);
+    [el, ...$$('svg', el)].forEach(sv => { try { if (v && !reducedMotion()) sv.unpauseAnimations(); else if (sv.pauseAnimations) sv.pauseAnimations(); } catch (e) { } });
+    onChange && onChange(v);
+  });
+  io.observe(el); return () => io.disconnect();
+}
+// SVG <animate> (SMIL) isn't touched by CSS, so Reduced motion pauses it here
+function syncSMIL(root = document) { $$('svg', root).forEach(sv => { if (sv.closest('.offscreen')) return; try { if (reducedMotion()) sv.pauseAnimations(); else sv.unpauseAnimations(); } catch (e) { } }); }
 
 /* ---------- icons ---------- */
 const S = (c) => `style="fill:none;stroke:${c};stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"`;
@@ -1200,6 +1358,145 @@ const ICONS = {
 const icon = (n, size = 34) => `<svg viewBox="0 0 34 34" width="${size}" height="${size}" aria-hidden="true">${ICONS[n] || ''}</svg>`;
 const chev = `<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M12 4l-6 6 6 6" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"/></svg>`;
 
+/* ---------- SETTINGS MENU: display, reading, and color options (the three-line button in every top bar) ---------- */
+// Saved under its own key, separate from progress (codonRodeo.v1), so erasing scores never resets a student's
+// accommodations. The <head> script applies the saved classes before the page paints.
+const SET_KEY = 'mustangFoldRush.settings';
+const SET_OK = { theme: ['auto', 'light', 'dark'], text: ['normal', 'large', 'xl'], motion: ['full', 'reduce'], hc: ['off', 'on'], dys: ['off', 'on'], ruler: ['off', 'on'], tts: ['off', 'on'], rate: ['normal', 'slow'], cvd: ['default', 'cb'] };
+const SET = (() => { let o = {}; try { o = JSON.parse(localStorage.getItem(SET_KEY) || '{}') || {}; } catch (e) { } const r = {}; for (const k in SET_OK) r[k] = SET_OK[k].includes(o[k]) ? o[k] : SET_OK[k][0]; return r; })();
+// Motion is Full for everyone unless the student picks Reduced here. Never read the device's prefers-reduced-motion:
+// many school computers have it switched on, and following it froze half the animations (the "choppy" look).
+function reducedMotion() { return SET.motion === 'reduce'; }
+const TTS_OK = (() => { try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance === 'function'; } catch (e) { return false; } })();
+const ICO_MENU = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round"/></svg>`;
+const ICO_SPEAK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9.5h3.8L12 5.6v12.8l-4.7-3.9H3.5z" style="fill:currentColor"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6M18 6.6a7.6 7.6 0 0 1 0 10.8" style="fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round"/></svg>`;
+const ICO_SLIDERS = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round"/><circle cx="15" cy="7" r="2.4" style="fill:none;stroke:currentColor;stroke-width:2.2"/><circle cx="9" cy="17" r="2.4" style="fill:none;stroke:currentColor;stroke-width:2.2"/></svg>`;
+const setBtn = (label = false) => `<button class="btn ghost small set-btn" type="button" data-settings aria-label="Settings: text size, colors, reading help" title="Settings: text size, colors, reading help">${ICO_MENU}${label ? '<span>Settings</span>' : ''}</button>`;
+const isDark = () => SET.theme === 'dark' || (SET.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+function applySettings() {
+  const d = document.documentElement;
+  if (SET.theme === 'auto') d.removeAttribute('data-theme'); else d.dataset.theme = SET.theme;
+  if (SET.text === 'normal') d.removeAttribute('data-text'); else d.dataset.text = SET.text;
+  d.classList.toggle('rm', reducedMotion()); d.classList.toggle('cb', SET.cvd === 'cb'); d.classList.toggle('dys', SET.dys === 'on');
+  d.classList.toggle('hc', SET.hc === 'on'); d.classList.toggle('tts', TTS_OK && SET.tts === 'on');
+  const m = $('meta[name="theme-color"]'); if (m) m.content = isDark() ? '#0D1828' : '#13294B';
+  ruler(SET.ruler === 'on');
+  if (SET.tts !== 'on') { stopSpeech(); hideSayPop(); }
+}
+function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(SET)); } catch (e) { } }
+function setSetting(k, v) {
+  if (SET[k] === v) return; SET[k] = v; saveSettings(); applySettings();
+  // sizes and fonts changed: let diagrams, canvases, and the Invaders field measure again
+  if (k === 'text' || k === 'dys') requestAnimationFrame(() => dispatchEvent(new Event('resize')));
+  if (k === 'motion') { syncSMIL(); if (titleCtl) titleCtl.restart(); }
+}
+/* reading ruler: a soft gold band that follows the pointer or finger */
+let RULER = null;
+const rulerAt = y => { if (RULER) RULER.style.transform = `translateY(${Math.round(y)}px)`; };
+const rulerPtr = e => rulerAt(e.clientY), rulerTouch = e => { const t = e.touches && e.touches[0]; if (t) rulerAt(t.clientY); };
+function ruler(on) {
+  if (on && !RULER) {
+    RULER = document.createElement('div'); RULER.className = 'ruler'; RULER.setAttribute('aria-hidden', 'true'); document.body.appendChild(RULER); rulerAt(innerHeight * .45);
+    addEventListener('pointermove', rulerPtr, { passive: true }); addEventListener('pointerdown', rulerPtr, { passive: true }); addEventListener('touchmove', rulerTouch, { passive: true });
+  } else if (!on && RULER) {
+    RULER.remove(); RULER = null; removeEventListener('pointermove', rulerPtr); removeEventListener('pointerdown', rulerPtr); removeEventListener('touchmove', rulerTouch);
+  }
+}
+/* read aloud: speaker buttons (.say) read directions and questions; selecting any text shows a "Read aloud" button */
+let VOICE = null, sayingBtn = null, sayPop = null;
+function pickVoice() {
+  try { const vs = speechSynthesis.getVoices(); VOICE = vs.find(v => /^en[-_]US/i.test(v.lang) && /Google|Natural|Samantha|Aria|Jenny/i.test(v.name)) || vs.find(v => /^en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null; } catch (e) { }
+}
+if (TTS_OK) { pickVoice(); try { speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) { } }
+function stopSpeech() { if (!TTS_OK) return; try { speechSynthesis.cancel(); } catch (e) { } if (sayingBtn) sayingBtn.classList.remove('talking'); sayingBtn = null; }
+function speak(text, btn) {
+  if (!TTS_OK) return;
+  const again = btn && btn === sayingBtn; stopSpeech(); if (again) return; // a second tap stops the reading
+  const parts = String(text || '').replace(/\s+/g, ' ').trim().match(/[^.!?]+[.!?]*\s*/g); if (!parts) return;
+  // one short utterance per sentence: Chrome cuts off long ones after about 15 seconds
+  parts.forEach((t, i) => {
+    const u = new SpeechSynthesisUtterance(t.trim()); u.lang = 'en-US'; if (VOICE) u.voice = VOICE; u.rate = SET.rate === 'slow' ? .8 : 1;
+    if (btn && i === parts.length - 1) u.onend = u.onerror = () => { if (sayingBtn === btn) { btn.classList.remove('talking'); sayingBtn = null; } };
+    speechSynthesis.speak(u);
+  });
+  if (btn) { sayingBtn = btn; btn.classList.add('talking'); }
+}
+const plain = html => { const d = document.createElement('div'); d.innerHTML = html; return d.textContent.replace(/\s+/g, ' ').trim(); };
+// text = what to read; leave it empty to read the button's parent element
+const sayBtn = (text = '', label = 'Read this out loud') => `<button type="button" class="say" data-say="${esc(text)}" aria-label="${label}" title="${label}">${ICO_SPEAK}</button>`;
+function hideSayPop() { if (sayPop) sayPop.hidden = true; }
+function showSayPop() {
+  if (!document.documentElement.classList.contains('tts')) return hideSayPop();
+  let sel, t = '';
+  try { sel = getSelection(); t = sel && !sel.isCollapsed && sel.rangeCount ? sel.toString().trim() : ''; } catch (e) { }
+  if (t.length < 2 || (sel.anchorNode && sel.anchorNode.parentElement && sel.anchorNode.parentElement.closest('.set-drawer,input,textarea'))) return hideSayPop();
+  const r = sel.getRangeAt(0).getBoundingClientRect(); if (!r.width && !r.height) return hideSayPop();
+  if (!sayPop) {
+    sayPop = document.createElement('button'); sayPop.type = 'button'; sayPop.className = 'say-pop'; sayPop.innerHTML = ICO_SPEAK + '<span>Read aloud</span>';
+    sayPop.addEventListener('pointerdown', e => e.preventDefault()); // keep the selection
+    sayPop.addEventListener('click', () => { speak(sayPop._t); hideSayPop(); });
+    document.body.appendChild(sayPop);
+  }
+  sayPop._t = t; sayPop.hidden = false;
+  const x = clamp(r.left + r.width / 2, 80, innerWidth - 80), above = r.top > 70, y = above ? r.top : r.bottom;
+  sayPop.style.transform = `translate(${Math.round(x)}px,${Math.round(y)}px) translate(-50%,${above ? 'calc(-100% - 10px)' : '10px'})`;
+}
+document.addEventListener('pointerup', () => setTimeout(showSayPop, 20));
+document.addEventListener('keyup', e => { if (e.shiftKey || e.key === 'Shift') showSayPop(); });
+document.addEventListener('selectionchange', () => { try { if (sayPop && !sayPop.hidden && getSelection().isCollapsed) hideSayPop(); } catch (e) { } });
+addEventListener('scroll', hideSayPop, { passive: true });
+/* the Settings drawer */
+function openSettings() {
+  if ($('.set-layer')) return;
+  dispatchEvent(new Event('mfr-pause')); // games with a clock (Dogma Invaders) pause while the drawer is open
+  const opener = document.activeElement;
+  const seg = (k, label, opts, note = '') => `<fieldset class="set-row"><legend>${label}</legend>${note ? `<p class="set-note">${note}</p>` : ''}<div class="set-seg">${opts.map(([v, t]) => `<label${SET[k] === v ? ' class="on"' : ''}><input type="radio" name="set-${k}" value="${v}"${SET[k] === v ? ' checked' : ''}>${t}</label>`).join('')}</div></fieldset>`;
+  const sw = (k, label, note) => `<button type="button" class="set-sw" role="switch" data-sw="${k}" aria-checked="${SET[k] === 'on'}"><span><b>${label}</b><span class="set-note">${note}</span></span><span class="sw-track" aria-hidden="true"></span></button>`;
+  const body = `
+    <section class="set-sec" aria-labelledby="setS1"><h3 id="setS1">See it</h3>
+      ${seg('text', 'Text size', [['normal', '<span class="aa" style="font-size:1rem">A</span>Normal'], ['large', '<span class="aa" style="font-size:1.25rem">A</span>Large'], ['xl', '<span class="aa" style="font-size:1.5rem">A</span>Extra large']])}
+      ${seg('theme', 'Light or dark', [['auto', 'Match my device'], ['light', 'Light'], ['dark', 'Dark']])}
+      ${sw('hc', 'High contrast', 'Darker text and stronger outlines.')}
+      ${seg('motion', 'Animations', [['full', 'Full'], ['reduce', 'Calm']], 'Calm stops moving backgrounds and plays changes without motion.')}
+    </section>
+    <section class="set-sec" aria-labelledby="setS2"><h3 id="setS2">Read it</h3>
+      ${TTS_OK ? `${sw('tts', 'Read aloud', 'Speaker buttons read directions and questions to you. Select any text to hear it, too.')}
+      ${seg('rate', 'Reading speed', [['normal', 'Normal'], ['slow', 'Slower']])}
+      <div class="set-try"><button type="button" class="btn ghost small" id="setHear">${ICO_SPEAK.replace('<svg', '<svg width="18" height="18"')} Hear a sample</button></div>` : ''}
+      ${sw('dys', 'Dyslexia-friendly text', 'A clearer font with more space between letters, words, and lines.')}
+      ${sw('ruler', 'Reading ruler', 'A soft band follows your pointer or finger to help you keep your place.')}
+    </section>
+    <section class="set-sec" aria-labelledby="setS3"><h3 id="setS3">Colors</h3>
+      ${seg('cvd', 'Color vision', [['default', 'Standard colors'], ['cb', 'Color-blind friendly']], 'Color-blind friendly uses colors most people can tell apart and adds a check or X to every right and wrong answer.')}
+      <div class="set-preview" aria-hidden="true"><span class="base A">A</span><span class="base U">U</span><span class="base G">G</span><span class="base C">C</span><span class="chip ok">Right</span><span class="chip no">Wrong</span></div>
+    </section>
+    <p class="set-foot">These settings stay on this device and never change your scores.</p>
+    <button type="button" class="btn ghost small set-reset" id="setReset">Reset all settings</button>`;
+  const layer = document.createElement('div'); layer.className = 'set-layer';
+  layer.innerHTML = `<div class="set-scrim"></div><aside class="set-drawer" role="dialog" aria-modal="true" aria-labelledby="setT"><div class="set-head"><h2 id="setT">${ICO_SLIDERS}Settings</h2><button class="btn small" id="setX" type="button">Done</button></div>${body}</aside>`;
+  document.body.appendChild(layer);
+  const drawer = $('.set-drawer', layer);
+  const close = () => { layer.remove(); removeEventListener('keydown', kh, true); if (opener && opener.isConnected && opener.focus) opener.focus({ preventScroll: true }); };
+  const kh = e => {
+    e.stopPropagation(); // keys belong to the drawer while it's open (so they don't fire Invaders rays behind it)
+    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    if (e.key !== 'Tab') return;
+    const f = $$('button,input', drawer).filter(x => !x.disabled && (x.offsetParent !== null || x.type === 'radio'));
+    const i = f.indexOf(document.activeElement), a = f[0], z = f[f.length - 1];
+    if (i < 0) { e.preventDefault(); a.focus(); } else if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); } else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+  };
+  addEventListener('keydown', kh, true);
+  $('.set-scrim', layer).onclick = close; $('#setX', layer).onclick = close; $('#setX', layer).focus();
+  $$('.set-seg input', layer).forEach(r => r.onchange = () => { $$('label', r.closest('.set-seg')).forEach(l => l.classList.toggle('on', l.contains(r))); setSetting(r.name.slice(4), r.value); });
+  $$('[data-sw]', layer).forEach(b => b.onclick = () => { const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); setSetting(b.dataset.sw, on ? 'on' : 'off'); });
+  const hear = $('#setHear', layer); if (hear) hear.onclick = () => speak('Howdy, partner! This is how directions and questions will sound. DNA is transcribed into mRNA, and mRNA is translated into a protein.', hear);
+  $('#setReset', layer).onclick = () => {
+    for (const k in SET_OK) SET[k] = SET_OK[k][0]; saveSettings(); applySettings(); syncSMIL(); if (titleCtl) titleCtl.restart();
+    requestAnimationFrame(() => dispatchEvent(new Event('resize'))); close(); openSettings(); toast('Settings reset');
+  };
+}
+applySettings();
+
 /* ---------- registry, router, shell ---------- */
 const GAMES = [];
 const reg = g => GAMES.push(g);
@@ -1207,13 +1504,13 @@ let leaveFns = [];
 const onLeave = fn => leaveFns.push(fn);
 const app = () => $('#app');
 
-function topActions() { return `<span class="top-actions">${store.data.name ? `<span class="pill">${esc(store.data.name)}</span>` : ''}<button class="btn ghost small" data-go="evidence" aria-label="My Evidence">${icon('evidence', 18)}<span class="lbl">My Evidence</span></button></span>`; }
+function topActions() { return `<span class="top-actions">${store.data.name ? `<span class="pill">${esc(store.data.name)}</span>` : ''}<button class="btn ghost small" data-go="evidence" aria-label="My Evidence">${icon('evidence', 18)}<span class="lbl">My Evidence</span></button>${setBtn()}</span>`; }
 const restartIcon = `<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4.5 9.5a5.5 5.5 0 1 0 1.8-4.1M4 3v4h4" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"/></svg>`;
 function topbar() { return `<header class="topbar home-top">${topActions()}</header>`; }
 function shell(g) {
   app().innerHTML = `<div class="wrap">
     <div class="gbar"><button class="btn ghost small" data-home aria-label="Back to main menu">${chev}<span>Menu</span></button><span class="lvl">Level ${g.level}</span><h1>${g.title}</h1><span class="spacer"></span><button class="btn ghost small" data-restart aria-label="Start this game over" title="Start this game over">${restartIcon}<span class="lbl">Start over</span></button>${topActions()}</div>
-    <p class="howto">${g.how}</p><div class="arena" id="arena"></div></div>`;
+    <p class="howto">${sayBtn('', 'Read the directions out loud')}<span>${g.how}</span></p><div class="arena" id="arena"></div></div>`;
   return $('#arena');
 }
 let current = null;
@@ -1224,6 +1521,7 @@ function go(id) {
 }
 function route(forced) {
   leaveFns.forEach(f => { try { f(); } catch (e) { } }); leaveFns = [];
+  stopSpeech(); hideSayPop(); requestAnimationFrame(() => syncSMIL(app()));
   let id = typeof forced === 'string' ? forced : '';
   if (typeof forced !== 'string') { try { id = location.hash.replace('#', ''); } catch (e) { } }
   current = id;
@@ -1235,6 +1533,8 @@ function route(forced) {
   g.run(arena, g);
 }
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-settings]')) { e.preventDefault(); openSettings(); return; }
+  const sb = e.target.closest('.say'); if (sb) { e.preventDefault(); e.stopPropagation(); const src = sb.parentElement; speak(sb.dataset.say || (src && src.innerText), sb); return; }
   const t = e.target.closest('[data-go],[data-home],[data-restart]'); if (!t) return;
   e.preventDefault(); if (t.hasAttribute('data-restart')) return route(current); go(t.hasAttribute('data-home') ? '' : t.dataset.go);
 });
@@ -1255,8 +1555,15 @@ function finishPanel(arena, g, correct, total, msg, again) {
 function DnD(root, onDropFn) {
   if (root._dnd) { root._dnd.cb = onDropFn; root._dnd.api.clearSel(); return root._dnd.api; }
   const state = { cb: onDropFn }; const onDrop = (a, b) => state.cb(a, b);
-  let sel = null, drag = null;
+  let sel = null, drag = null, mvRAF = 0, mvXY = null;
   const clearSel = () => { if (sel) sel.classList.remove('sel'); sel = null; };
+  // pointer events can arrive several times per frame on touchscreens; handle only the latest, once per frame
+  const frame = () => {
+    mvRAF = 0; if (!drag || !drag.moved || !mvXY) return;
+    const [x, y] = mvXY; drag.ghost.style.setProperty('--gx', x + 'px'); drag.ghost.style.setProperty('--gy', y + 'px');
+    const t = document.elementFromPoint(x, y)?.closest('[data-drop]');
+    if (drag.hot !== t) { drag.hot?.classList.remove('drop-hot'); t?.classList.add('drop-hot'); drag.hot = t; }
+  };
   const down = e => {
     const el = e.target.closest('[data-drag]'); if (!el || !root.contains(el) || el.classList.contains('used')) return;
     drag = { el, x: e.clientX, y: e.clientY, moved: false, ghost: null, hot: null };
@@ -1265,18 +1572,17 @@ function DnD(root, onDropFn) {
   const move = e => {
     if (!drag) return;
     if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
-      drag.moved = true; const g = drag.el.cloneNode(true); g.classList.add('drag-ghost'); g.classList.remove('sel'); document.body.appendChild(g); drag.ghost = g; drag.el.style.opacity = '.35';
+      drag.moved = true; const g = drag.el.cloneNode(true); g.classList.add('drag-ghost'); g.classList.remove('sel');
+      g.style.setProperty('--gx', e.clientX + 'px'); g.style.setProperty('--gy', e.clientY + 'px'); document.body.appendChild(g); drag.ghost = g; drag.el.style.opacity = '.35';
     }
     if (drag.moved) {
       e.preventDefault();
-      drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
-      const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-drop]');
-      if (drag.hot !== t) { drag.hot?.classList.remove('drop-hot'); t?.classList.add('drop-hot'); drag.hot = t; }
+      mvXY = [e.clientX, e.clientY]; if (!mvRAF) mvRAF = requestAnimationFrame(frame);
     }
   };
   const up = e => {
     if (!drag) return;
-    const d = drag; drag = null;
+    const d = drag; drag = null; cancelAnimationFrame(mvRAF); mvRAF = 0; mvXY = null;
     if (d.moved) {
       d.ghost.remove(); d.el.style.opacity = ''; d.hot?.classList.remove('drop-hot');
       const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-drop]');
@@ -1402,16 +1708,20 @@ function sortable(ul, onChange) {
     const g = e.target.closest('.grip'); if (!g) return;
     dragEl = g.closest('.sortitem'); dragEl.classList.add('dragging'); e.preventDefault();
   });
-  const mv = e => {
-    if (!dragEl) return; e.preventDefault();
-    const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('.sortitem');
+  let mvRAF = 0, mvXY = null;
+  const mvFrame = () => {
+    mvRAF = 0; if (!dragEl || !mvXY) return; const [x, y] = mvXY;
+    const over = document.elementFromPoint(x, y)?.closest('.sortitem');
     if (over && over !== dragEl && over.parentNode === ul) {
-      const r = over.getBoundingClientRect();
-      ul.insertBefore(dragEl, e.clientY < r.top + r.height / 2 ? over : over.nextSibling);
-      renumber();
+      const r = over.getBoundingClientRect(), before = y < r.top + r.height / 2 ? over : over.nextSibling;
+      if (before !== dragEl && before !== dragEl.nextSibling) { ul.insertBefore(dragEl, before); renumber(); }
     }
   };
-  const upf = () => { if (dragEl) dragEl.classList.remove('dragging'); dragEl = null; };
+  const mv = e => {
+    if (!dragEl) return; e.preventDefault();
+    mvXY = [e.clientX, e.clientY]; if (!mvRAF) mvRAF = requestAnimationFrame(mvFrame);
+  };
+  const upf = () => { cancelAnimationFrame(mvRAF); mvRAF = 0; if (dragEl) dragEl.classList.remove('dragging'); dragEl = null; };
   addEventListener('pointermove', mv, { passive: false }); addEventListener('pointerup', upf);
   onLeave(() => { removeEventListener('pointermove', mv); removeEventListener('pointerup', upf); });
   ul.addEventListener('click', e => {
@@ -1432,7 +1742,8 @@ const dnSVG = `<svg viewBox="0 0 20 20" width="14" height="14"><path d="M5 8l5 5
 function mcQuestion(host, q, opts, correctIdx, explain) {
   return new Promise(res => {
     const order = shuffle(opts.map((o, i) => i));
-    host.innerHTML = `<div class="qcard"><h3>${q}</h3><div class="opts">${order.map(i => `<button class="opt" data-i="${i}">${opts[i]}</button>`).join('')}</div><div class="feedback" id="mcfb"></div><div id="mcnext"></div></div>`;
+    const sayQ = plain(q) + ' ' + order.map((i, n) => `Choice ${n + 1}: ${plain(opts[i])}.`).join(' ');
+    host.innerHTML = `<div class="qcard"><h3>${sayBtn(sayQ, 'Read the question and choices out loud')}<span>${q}</span></h3><div class="opts">${order.map(i => `<button class="opt" data-i="${i}">${opts[i]}</button>`).join('')}</div><div class="feedback" id="mcfb"></div><div id="mcnext"></div></div>`;
     host.querySelectorAll('.opt').forEach(b => b.onclick = () => {
       const i = +b.dataset.i, ok = i === correctIdx;
       host.querySelectorAll('.opt').forEach(x => { x.disabled = true; if (+x.dataset.i === correctIdx) x.classList.add('ok'); });
@@ -1981,7 +2292,7 @@ const TX_STATIC = { k: 15, a: 1, pol: { x: txPolX(15), y: 310, op: 1 } };
 function pathPoint(P, s) { let acc = 0; for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], L = Math.hypot(bx - ax, by - ay); if (acc + L >= s) { const t = (s - acc) / L; return [ax + (bx - ax) * t, ay + (by - ay) * t]; } acc += L; } const [ax, ay] = P[P.length - 2], [bx, by] = P[P.length - 1], L = Math.hypot(bx - ax, by - ay); return [bx + (bx - ax) / L * (s - acc), by + (by - ay) / L * (s - acc)]; }
 async function transcriptionFinale(svgEl, cap, token) {
   const g = svgEl.querySelector('#scene');
-  const draw = st => { g.innerHTML = txFrame(st).s; };
+  const draw = st => { morph(g, txFrame(st).s); };
   const T = () => performance.now() / 1000;
   const bind = txPolX(TX_START - 1);
   // 1. polymerase arrives
@@ -2011,14 +2322,14 @@ async function transcriptionFinale(svgEl, cap, token) {
   const onPath = head => seq.map((b, i) => { const [x, y] = pathPoint(E, head - i * sp); return { x, y, b }; });
   await tween(token, 1500, e => {
     const target = onPath(head0);
-    g.innerHTML = txFrame({ k: TX_END, a: 1 - e, pol: { x: txPolX(TX_END) + 140 * e, y: 310 - 170 * e, op: 1 - e }, free: seq.map((b, i) => ({ b, x: lerp(R[i][0], target[i].x, e), y: lerp(R[i][1], target[i].y, e) })), t: T() }).s;
+    morph(g, txFrame({ k: TX_END, a: 1 - e, pol: { x: txPolX(TX_END) + 140 * e, y: 310 - 170 * e, op: 1 - e }, free: seq.map((b, i) => ({ b, x: lerp(R[i][0], target[i].x, e), y: lerp(R[i][1], target[i].y, e) })), t: T() }).s);
   });
   // 5. the mRNA leaves through a nuclear pore
   setCap(cap, 5, 'The finished mRNA travels out of the nucleus through a <b>nuclear pore</b>...');
-  await tween(token, 3600, e => { g.innerHTML = txFrame({ k: TX_END, a: 0, free: onPath(head0 + 220 * e), t: T() }).s; });
+  await tween(token, 3600, e => { morph(g, txFrame({ k: TX_END, a: 0, free: onPath(head0 + 220 * e), t: T() }).s); });
   // 6. ribosome in the cytoplasm
   setCap(cap, 6, '...into the cytoplasm, where a ribosome grabs it. Next stop: <b>translation</b>!');
-  await tween(token, 1400, e => { const f = onPath(head0 + 220 + 20 * e); g.innerHTML = txFrame({ k: TX_END, a: 0, free: f, ribo: { x: f[3].x, y: f[3].y + 6, op: e, sc: lerp(.4, 1, e) }, t: T() }).s; });
+  await tween(token, 1400, e => { const f = onPath(head0 + 220 + 20 * e); morph(g, txFrame({ k: TX_END, a: 0, free: f, ribo: { x: f[3].x, y: f[3].y + 6, op: e, sc: lerp(.4, 1, e) }, t: T() }).s); });
   await wait(token, 1800);
 }
 
@@ -2078,7 +2389,7 @@ function riboScene(st) {
 const RB_STATIC = { shift: 0, tail: 56, codonBracket: 7, antiBracket: { cx: 726, dy: -150 }, chainBracket: true, trnas: [{ cx: SITE.E - 30, dy: -70, anti: 'GUA', aa: null, op: .55, showAA: false }, { cx: SITE.P, anti: 'GAC', aa: 'L' }, { cx: SITE.A, anti: 'UGA', aa: 'T' }, { cx: 726, dy: -150, anti: 'GGA', aa: 'P' }], bond: [SITE.P, 222, SITE.A, 222], chain: { from: [SITE.P, 222], aas: ['H', 'V', 'M'] } };
 async function translationFinale(svgEl, cap, token) {
   const g = svgEl.querySelector('#scene');
-  const draw = st => { g.innerHTML = riboScene({ codons: FIN_CODONS, siteLetters: true, ...st }); };
+  const draw = st => { morph(g, riboScene({ codons: FIN_CODONS, siteLetters: true, ...st })); };
   const anti = j => [...FIN_CODONS[j]].map(b => rnaComp[b]).join('');
   const aaOf = j => CODON2AA[FIN_CODONS[j]];
   const msFor = j => 78 * (j - 4); // codon j sits in the P site
@@ -2444,8 +2755,8 @@ reg({
         const colA = cols[ci] || null, last = cols[cols.length - 1];
         const ax = colA ? colA.offsetLeft : last.offsetLeft + (ci - cols.length + 1) * 96;
         const dock = (colA || last).querySelector('.tk-dock'), cod = (colA || last).querySelector('.tk-codon');
-        ribo.style.transition = animate ? 'left .65s cubic-bezier(.4,0,.2,1)' : 'none';
-        ribo.style.left = (ax - 192) + 'px'; ribo.style.top = (dock.offsetTop - 10) + 'px';
+        ribo.style.transition = animate ? 'transform .65s cubic-bezier(.4,0,.2,1)' : 'none';
+        ribo.classList.add('ribo-glide'); ribo.style.left = '0px'; ribo.style.transform = `translateX(${ax - 192}px)`; ribo.style.top = (dock.offsetTop - 10) + 'px';
         ribo.style.height = (cod.offsetTop + cod.offsetHeight + 22 - dock.offsetTop + 10) + 'px';
         ribo.querySelector('.ribo-L').style.height = (cod.offsetTop - dock.offsetTop + 8) + 'px';
         ribo.hidden = false;
@@ -2500,24 +2811,29 @@ reg({
         e.preventDefault();
         const aa = w.dataset.aa, cur = codons[ci], anti = aa === CODON2AA[cur] ? antiOf(cur) : antiOf(AA2CODONS[aa][0]);
         const gh = document.createElement('div'); gh.className = 'drag-trna'; gh.innerHTML = tRNAMini(aa, anti); document.body.appendChild(gh);
-        gh.style.left = e.clientX + 'px'; gh.style.top = e.clientY + 'px';
-        drag = { aa, gh, x: e.clientX, y: e.clientY, moved: false, hot: null };
+        gh.style.setProperty('--gx', e.clientX + 'px'); gh.style.setProperty('--gy', e.clientY + 'px');
+        drag = { aa, gh, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, hot: null };
         $$('.wg', wheel).forEach(x => x.classList.toggle('dim', x !== w && x.dataset.ring === '4'));
       });
+      let mvRAF = 0;
+      const mvFrame = () => {
+        mvRAF = 0; if (!drag) return;
+        drag.gh.style.setProperty('--gx', drag.lx + 'px'); drag.gh.style.setProperty('--gy', drag.ly + 'px');
+        const t = document.elementFromPoint(drag.lx, drag.ly)?.closest('.tk-dock.cur');
+        if (t !== drag.hot) { drag.hot?.classList.remove('hot'); t?.classList.add('hot'); drag.hot = t; }
+      };
       const mv = e => {
         if (!drag) return; e.preventDefault();
         if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) drag.moved = true;
-        drag.gh.style.left = e.clientX + 'px'; drag.gh.style.top = e.clientY + 'px';
-        const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('.tk-dock.cur');
-        if (t !== drag.hot) { drag.hot?.classList.remove('hot'); t?.classList.add('hot'); drag.hot = t; }
+        drag.lx = e.clientX; drag.ly = e.clientY; if (!mvRAF) mvRAF = requestAnimationFrame(mvFrame);
       };
       const upf = e => {
-        if (!drag) return; const d = drag; drag = null;
+        if (!drag) return; const d = drag; drag = null; cancelAnimationFrame(mvRAF); mvRAF = 0;
         $$('.wg', wheel).forEach(x => x.classList.remove('dim')); d.hot?.classList.remove('hot');
         const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('.tk-dock.cur');
         if (!d.moved) { d.gh.remove(); selected = d.aa; drawTrack(); say(`${d.aa === '*' ? 'Release factor' : AANAME[d.aa] + ' tRNA'} picked up. Now tap the dashed spot above the codon (or drag it there).`, true); return; }
         if (t) { d.gh.remove(); place(d.aa, t); }
-        else { try { d.gh.animate([{ opacity: 1 }, { opacity: 0, transform: 'translate(-50%,-70%) scale(.6)' }], { duration: 250 }).onfinish = () => d.gh.remove(); } catch (er) { d.gh.remove(); } }
+        else { try { const at = `translate3d(${e.clientX}px,${e.clientY}px,0)`; d.gh.animate([{ opacity: 1, transform: `${at} translate(-50%,-75%)` }, { opacity: 0, transform: `${at} translate(-50%,-70%) scale(.6)` }], { duration: 250 }).onfinish = () => d.gh.remove(); } catch (er) { d.gh.remove(); } }
       };
       addEventListener('pointermove', mv, { passive: false }); addEventListener('pointerup', upf);
       onLeave(() => { removeEventListener('pointermove', mv); removeEventListener('pointerup', upf); drag?.gh.remove(); });
@@ -3118,7 +3434,7 @@ reg({
         if (s.lock) s.shipTX = s.lock.x + invW / 2;
         if (s.L || s.R) { s.shipX += (s.R - s.L) * 430 * dt; s.shipTX = s.shipX; } else s.shipX += clamp(s.shipTX - s.shipX, -680 * dt, 680 * dt);
         s.shipX = clamp(s.shipX, 24, W - 24);
-        s.cool = Math.max(0, s.cool - dt); s.inv = Math.max(0, s.inv - dt); s.glowT -= dt; s.shake *= .86; s.breachT = Math.max(0, s.breachT - dt);
+        s.cool = Math.max(0, s.cool - dt); s.inv = Math.max(0, s.inv - dt); s.glowT -= dt; s.shake *= Math.pow(.86, dt * 60); s.breachT = Math.max(0, s.breachT - dt);
         if (s.hold > 0) s.hold -= dt;
         else if (!s.over) {
           const alive = s.invs.filter(v => v.alive).length, base = [640, 580, 620, 540][s.wave] * (P.relaxed ? 1.6 : 1), lo = 230 * (P.relaxed ? 1.5 : 1);
@@ -3143,7 +3459,7 @@ reg({
           if (!s.over && s.inv <= 0 && Math.abs(b.x - s.shipX) < 20 && b.y > shipY - 18 && b.y < shipY + 12) { shipHit(); return false; }
           return b.y < H + 20;
         });
-        s.parts = s.parts.filter(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 140 * dt; p.vx *= .98; p.life -= dt; return p.life > 0; });
+        s.parts = s.parts.filter(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 140 * dt; p.vx *= Math.pow(.98, dt * 60); p.life -= dt; return p.life > 0; });
         s.floats = s.floats.filter(f => { f.y -= 38 * dt; f.life -= dt; return f.life > 0; });
         const t = s.over ? null : target(); if (t !== s.tgt) { s.tgt && s.tgt.el.classList.remove('tgt'); t && t.el.classList.add('tgt'); s.tgt = t; }
         fd.style.transform = s.shake > .6 ? `translate(${((Math.random() - .5) * s.shake).toFixed(1)}px,${((Math.random() - .5) * s.shake).toFixed(1)}px)` : '';
@@ -3214,12 +3530,13 @@ reg({
       };
       const ku = e => { const k = e.key; if (k === 'ArrowLeft' || k === 'a' || k === 'A') s.L = false; if (k === 'ArrowRight' || k === 'd' || k === 'D') s.R = false; };
       const vis = () => { if (document.hidden && !s.over) setPause(true); };
-      document.addEventListener('keydown', kd); document.addEventListener('keyup', ku); document.addEventListener('visibilitychange', vis);
+      const mfrPause = () => { if (!s.over && !s.paused) setPause(true); }; // the Settings drawer opened
+      document.addEventListener('keydown', kd); document.addEventListener('keyup', ku); document.addEventListener('visibilitychange', vis); addEventListener('mfr-pause', mfrPause);
       const ro = new ResizeObserver(() => resize()); ro.observe(fd);
       $('#ipz', arena).onclick = () => setPause(!s.paused);
       $('#iset', arena).onclick = () => setPause(true, 'settings');
       $('#isd', arena).onclick = e => { P.sound = !P.sound; e.currentTarget.setAttribute('aria-pressed', P.sound); store.save(); };
-      cleanup.push(() => { cancelAnimationFrame(raf); clearTimeout(banner.t); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis); window.removeEventListener('pointerup', up); ro.disconnect(); });
+      cleanup.push(() => { cancelAnimationFrame(raf); clearTimeout(banner.t); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); document.removeEventListener('visibilitychange', vis); removeEventListener('mfr-pause', mfrPause); window.removeEventListener('pointerup', up); ro.disconnect(); });
       resize(); startWave(); hud(); raf = requestAnimationFrame(loop);
     }
   }
@@ -3246,7 +3563,7 @@ function dogmaStrip() {
       .ds-s3{animation:dsP3 ${T}s ease-in-out infinite}@keyframes dsP3{0%,47%,60%,100%{transform:none}53%{transform:scale(1.1)}}
       .ds-s4{animation:dsP4 ${T}s ease-in-out infinite}@keyframes dsP4{0%,80%,100%{transform:none}86%{transform:scale(1.12)}}
       .ds-eye{transform-box:fill-box;transform-origin:center;animation:dsBlink ${T}s ease-in-out infinite}@keyframes dsBlink{0%,93%,97%,100%{transform:none}95%{transform:scaleY(.08)}}
-      @media (prefers-reduced-motion: reduce){.ds-sig{display:none}}
+      .rm .ds-sig{display:none}
     </style>
     <g class="ds-s1">${Array.from({ length: 9 }, (_, i) => { const y = 24 + i * 18, w = 34 * Math.sin(i * .75); return `<line x1="${70 - w}" y1="${y}" x2="${70 + w}" y2="${y}" style="stroke:${[BASECOL.A, BASECOL.T, BASECOL.G, BASECOL.C][i % 4]};stroke-width:5"/>`; }).join('')}
     <path d="${Array.from({ length: 9 }, (_, i) => `${i ? 'L' : 'M'}${70 - 34 * Math.sin(i * .75)} ${24 + i * 18}`).join(' ')}" style="fill:none;stroke:var(--bG);stroke-width:4"/>
@@ -3324,7 +3641,7 @@ function fitRush(svg) {
 function startTitle(svg) {
   fitRush(svg); try { document.fonts && document.fonts.ready.then(() => fitRush(svg)); } catch (e) { }
   const circles = $$('circle[data-b]', svg), lines = $$('path[data-s]', svg);
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = reducedMotion();
   const anims = TLETTERS.map(() => null);
   const easeBack = t => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
   const paint = now => {
@@ -3356,9 +3673,13 @@ function startTitle(svg) {
   svg.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { hovering = true; unravelAll(); } });
   svg.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { hovering = false; refoldAll(); } });
   svg.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') { unravelAll(); timers.push(setTimeout(refoldAll, 1100)); } });
-  let raf; const loop = now => { paint(now); raf = requestAnimationFrame(loop); }; raf = requestAnimationFrame(loop);
-  return () => { cancelAnimationFrame(raf); clearInterval(idle); timers.forEach(clearTimeout); };
+  // book the next frame first so one bad frame can't stop the loop; stop drawing entirely while scrolled out of view
+  let raf = 0; const loop = now => { raf = requestAnimationFrame(loop); paint(now); }; raf = requestAnimationFrame(loop);
+  const unwatch = pauseOffscreen(svg, v => { cancelAnimationFrame(raf); raf = v ? requestAnimationFrame(loop) : 0; });
+  return () => { cancelAnimationFrame(raf); raf = 0; unwatch(); clearInterval(idle); timers.forEach(clearTimeout); };
 }
+// the home title, so changing the Animations setting can restart it in the new mode
+let titleCtl = null;
 let homeIntroDone = false;
 function nextGame() {
   const G = store.data.games, order = LEVELS.flatMap(L => GAMES.filter(x => x.level === L.n));
@@ -3396,11 +3717,11 @@ function renderHome() {
   const intro = !homeIntroDone; homeIntroDone = true;
   app().innerHTML = `<div class="wrap home${intro ? ' intro' : ''}">
     <section class="hero-band">
-      <div class="hb-top"><span class="hb-chip">Biology · Standard 1.4 · HS-LS1-1</span><button class="btn ghost small hb-ev" data-go="evidence">${icon('evidence', 18)} My Evidence</button></div>
+      <div class="hb-top"><span class="hb-chip">Biology · Standard 1.4 · HS-LS1-1</span><span class="top-actions"><button class="btn ghost small hb-ev" data-go="evidence">${icon('evidence', 18)} My Evidence</button>${setBtn(true)}</span></div>
       <div class="title-row"><svg class="title-mustang" viewBox="278 -44 884 888" aria-hidden="true"><circle cx="720" cy="400" r="425" style="fill:#DCEEFB;stroke:#4B9CD3;stroke-width:22"/>${mustangUse()}</svg>
         <div class="title-text"><h1 class="title-logo">${titleSVG()}<span class="sr">Mustang Fold Rush</span></h1><p class="subtitle">Code it. Build it. <em>Fold it.</em></p></div></div>
       <div class="hb-grid">
-        <div class="hb-std"><p class="kicker">The big idea</p><p class="hb-quote">I can model how <b>DNA structure</b> determines the <b>structure and function of proteins</b>, which carry out essential functions for all cells.</p><p class="hb-hint">Watch the strip: one gene becomes one message, one protein, and one trait you can see.</p></div>
+        <div class="hb-std"><p class="kicker">The big idea</p><p class="hb-quote">${sayBtn('', 'Read the big idea out loud')}I can model how <b>DNA structure</b> determines the <b>structure and function of proteins</b>, which carry out essential functions for all cells.</p><p class="hb-hint">Watch the strip: one gene becomes one message, one protein, and one trait you can see.</p></div>
         <figure class="dogma-card">${dogmaStrip()}</figure>
       </div>
     </section>
@@ -3408,11 +3729,14 @@ function renderHome() {
     <div class="trail">${LEVELS.map(L => { const gs = GAMES.filter(x => x.level === L.n), done = gs.filter(x => G[x.id]).length; return `<section class="tl lv${L.n}" aria-labelledby="lv${L.n}">
       <div class="tl-rail"><div class="tl-badge">${ringSVG(done / gs.length, 60, 5)}<span>${done === gs.length ? icon('check', 24) : L.n}</span></div></div>
       <div class="tl-body"><header class="tl-head"><div class="tl-kick"><p class="kicker">Level ${L.n} · ${L.name}</p><div class="tl-prog"><i><b style="width:${done / gs.length * 100}%"></b></i><span>${done} of ${gs.length} played</span></div></div>
-        <h2 id="lv${L.n}">${L.can.replace(/^Additionally, /, '<span class="tl-add">Additionally,</span> ')}</h2></header>
+        <h2 id="lv${L.n}">${sayBtn(`Level ${L.n}. ${L.can}`, `Read Level ${L.n} out loud`)}${L.can.replace(/^Additionally, /, '<span class="tl-add">Additionally,</span> ')}</h2></header>
         <div class="gcards">${gs.map(x => { const r = G[x.id], up = named && x.id === next.id; return `<button class="gcard${up ? ' up' : ''}" data-go="${x.id}"><span class="gc-top"><span class="ic">${icon(x.icon)}</span><h3>${x.title}</h3></span><p>${x.blurb}</p><span class="gc-foot">${r ? `<span class="gc-best">Best ${r.best}%</span>` : up ? '<span class="gc-up">Up next</span>' : '<span class="gc-new">Not played yet</span>'}<span class="gc-play">${r ? 'Replay' : 'Play'} <span aria-hidden="true">→</span></span></span></button>`; }).join('')}</div></div>
     </section>`; }).join('')}</div>
     <footer class="home-foot"><span>Mr. Rankin · Little Chute High School Biology</span><span>Progress saves in this browser only. Use the same device and browser each time.</span></footer></div>`;
-  const stopTitle = startTitle($('.fr-title')); onLeave(stopTitle);
+  const tsvg = $('.fr-title'); let stopTitle = startTitle(tsvg);
+  titleCtl = { restart() { stopTitle(); stopTitle = startTitle(tsvg); } };
+  const unwatchStrip = pauseOffscreen($('.dogma-card'));
+  onLeave(() => { stopTitle(); unwatchStrip(); titleCtl = null; });
   const chg = $('#chg'); if (chg) chg.onclick = () => { chg.parentElement.hidden = true; $('#nf').hidden = false; $('#nm').focus(); $('#nm').select(); };
   $('#nf').onsubmit = e => { e.preventDefault(); const was = store.data.name; store.data.name = $('#nm').value.trim().slice(0, 40); store.save(); if (!store.data.name) { toast('Type your name first'); return; } toast(was ? 'Name updated' : `Welcome, ${store.data.name.split(/\s+/)[0]}!`); if (!was) confetti(70); renderHome(); };
 }
@@ -3550,7 +3874,7 @@ function renderEvidence() {
   const { G, played, avg, plays, lvls } = evStats();
   const refl = store.data.reflection || '';
   app().innerHTML = `<div class="wrap ev">
-    <div class="gbar"><button class="btn ghost small" data-home aria-label="Back to main menu">${chev}<span>Menu</span></button><h1>My Evidence</h1></div>
+    <div class="gbar"><button class="btn ghost small" data-home aria-label="Back to main menu">${chev}<span>Menu</span></button><h1>My Evidence</h1><span class="spacer"></span>${setBtn()}</div>
     <section class="ev-hero"><div><p class="kicker">Portfolio artifact</p><h2>Show what you’ve learned</h2><p>Download your scores and reflection as a PNG or PDF. Turn it in on Google Classroom for credit, or add it to your portfolio under <b>Self-Directed Learner</b>.</p></div>
       <ol class="ev-steps"><li><span>1</span>Check your scores</li><li><span>2</span>Write your reflection</li><li><span>3</span>Download and turn in</li></ol></section>
     <div class="ev-grid"><div class="ev-main">
