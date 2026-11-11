@@ -1175,7 +1175,7 @@ const baseTile = (b, extra = '') => `<span class="base ${b} ${extra}">${b}</span
 const BASECOL = { A: 'var(--bA)', U: 'var(--bU)', T: 'var(--bT)', G: 'var(--bG)', C: 'var(--bC)' };
 
 /* ---------- vocabulary (from the Standard 1.4 lecture) ---------- */
-const VOCAB = [ /* core Standard 1.4 vocabulary; x = short answer for crossword/acrostic, c = clue that hides the answer */
+const VOCAB = [ /* core Standard 1.4 vocabulary; x = short answer for crossword/acrostic, c = clue that hides the answer, h = one-word answer for Don't Fry the Egg (it then shows c as the clue) */
   { t: 'Central dogma', d: 'The flow of genetic information: DNA → RNA → protein', x: 'DOGMA', c: 'Central ____: DNA → RNA → protein' },
   { t: 'DNA', d: 'Double-stranded nucleic acid in the nucleus that stores genes, the "cookbook" of recipes' },
   { t: 'Gene', d: 'A section of DNA that codes for one protein, a single "recipe"' },
@@ -1199,14 +1199,15 @@ const VOCAB = [ /* core Standard 1.4 vocabulary; x = short answer for crossword/
   { t: 'Peptide bond', d: 'The covalent bond that links one amino acid to the next', x: 'PEPTIDE', c: 'A ____ bond links amino acids together' },
   { t: 'Polypeptide', d: 'A chain of amino acids linked by peptide bonds' },
   { t: 'Protein', d: 'One or more polypeptides folded into a specific shape that does a job' },
-  { t: 'Primary structure', d: '1°: the sequence (order) of amino acids in a chain', x: 'PRIMARY', c: '1° structure: the order of amino acids' },
-  { t: 'Secondary structure', d: '2°: a chain coiled into a helix or pleated into a sheet by hydrogen bonds', x: 'SECONDARY', c: '2° structure: helices and pleated sheets' },
-  { t: 'Tertiary structure', d: '3°: the folded 3-D shape of one polypeptide; most working proteins', x: 'TERTIARY', c: '3° structure: one chain folded into a 3-D shape' },
-  { t: 'Quaternary structure', d: '4°: two or more polypeptides joined together, like hemoglobin', x: 'QUATERNARY', c: '4° structure: two or more chains joined' },
-  { t: 'Alpha helix', d: 'A spiral-shaped secondary structure', x: 'HELIX', c: 'Alpha ____: a spiral 2° shape' },
-  { t: 'Pleated sheet', d: 'A folded, zig-zag secondary structure', x: 'SHEET', c: 'Pleated ____: a zig-zag 2° shape' },
+  { t: 'Trait', d: 'A characteristic, like eye color, that comes from the proteins your genes code for' },
+  { t: 'Primary structure', h: 'Primary', d: '1°: the sequence (order) of amino acids in a chain', x: 'PRIMARY', c: '1° structure: the order of amino acids' },
+  { t: 'Secondary structure', h: 'Secondary', d: '2°: a chain coiled into a helix or pleated into a sheet by hydrogen bonds', x: 'SECONDARY', c: '2° structure: helices and pleated sheets' },
+  { t: 'Tertiary structure', h: 'Tertiary', d: '3°: the folded 3-D shape of one polypeptide; most working proteins', x: 'TERTIARY', c: '3° structure: one chain folded into a 3-D shape' },
+  { t: 'Quaternary structure', h: 'Quaternary', d: '4°: two or more polypeptides joined together, like hemoglobin', x: 'QUATERNARY', c: '4° structure: two or more chains joined' },
+  { t: 'Helical', d: 'A secondary (2°) shape where the chain coils up like a spring or a Slinky' },
+  { t: 'Pleated', d: 'A secondary (2°) shape where the chain folds back and forth like an accordion into a flat sheet' },
   { t: 'Hydrogen bond', d: 'Weak attraction that holds helices and pleated sheets in shape', x: 'HYDROGEN', c: '____ bonds hold helices and sheets in shape' },
-  { t: 'Disulfide bridge', d: 'Strong sulfur-to-sulfur bond between two cysteines that locks a fold in place', x: 'DISULFIDE', c: 'S–S ____ bridge locks a fold in place' },
+  { t: 'Heavy metals', d: 'Toxic metals such as lead and mercury that can denature proteins', x: 'HEAVYMETALS' },
   { t: 'Denaturation', d: 'Unraveling of a protein\'s shape by heat or pH, so it can no longer do its job' },
   { t: 'Enzyme', d: 'A protein that speeds up a chemical reaction; its shape must fit its target' }
 ];
@@ -1233,14 +1234,15 @@ const CLUES = {
  "PEPTIDE": "A ____ bond is the covalent bond that links one amino acid to the next in a chain",
  "POLYPEPTIDE": "A long chain of amino acids linked together that will fold up to become a protein",
  "PROTEIN": "The final product of the central dogma: folded chains of amino acids that do jobs in the cell",
+ "TRAIT": "A characteristic such as eye color or hair texture; genes code for proteins, and proteins produce this",
  "PRIMARY": "____ structure (1°): the order of amino acids in the chain, like the letters of the alphabet",
  "SECONDARY": "____ structure (2°): the chain coils into helices or folds into pleated sheets, like words",
  "TERTIARY": "____ structure (3°): one whole chain folded into a 3-D shape; most working proteins look like this",
  "QUATERNARY": "____ structure (4°): two or more folded chains stuck together, like the four chains of hemoglobin",
- "HELIX": "Alpha ____: a coiled, spring-shaped secondary structure held together by hydrogen bonds",
- "SHEET": "Pleated ____: a back-and-forth, accordion-folded secondary structure",
+ "HELICAL": "Secondary (2°) shape where the chain coils up like a spring or a Slinky, held by hydrogen bonds",
+ "PLEATED": "Secondary (2°) shape where the chain folds back and forth like an accordion or a paper fan",
  "HYDROGEN": "____ bonds are weak attractions that hold alpha helices and pleated sheets in shape",
- "DISULFIDE": "____ bridge: a strong sulfur-to-sulfur (S–S) bond between two cysteines that locks a fold in place",
+ "HEAVYMETALS": "Toxic elements such as lead and mercury that can denature proteins by breaking the bonds that hold their shape (two words, no space)",
  "DENATURATION": "When heat or a pH change unravels a protein's shape so it stops working (like cooking an egg white)",
  "ENZYME": "A protein that speeds up a chemical reaction; its shape must fit its target like a lock and key"
 };
@@ -1841,10 +1843,10 @@ reg({
     let heatNow = 22, raf = null, look = null; onLeave(() => cancelAnimationFrame(raf));
     const tally = () => words.map((_, i) => { const r = results[i]; const yolk = r === 'saved' ? '#F6B526' : r === 'fried' ? '#9C6A2E' : 'none'; return `<svg viewBox="0 0 24 24" aria-label="${r || 'not played'}"><path d="M3 13 C2 7 8 5 12 6 C17 4 22 8 21 13 C21 18 16 20 12 19 C7 21 3 18 3 13Z" style="fill:${r ? '#FFFFFF' : 'none'};stroke:var(--ink-2);stroke-width:1.5"/><circle cx="12" cy="12.5" r="4" style="fill:${yolk};stroke:${r ? 'none' : 'var(--ink-2)'};stroke-width:1.2"/></svg>`; }).join('');
     function play() {
-      const v = words[wi], ans = v.t.toUpperCase(); const guessed = new Set(); let wrong = 0, over = false;
+      const v = words[wi], term = v.h || v.t, ans = term.toUpperCase(); const guessed = new Set(); let wrong = 0, over = false;
       arena.innerHTML = `<div class="status"><div class="stat"><span>Term</span>${wi + 1} / ${words.length}</div><span class="eggtally" aria-label="Eggs saved and fried">${tally()}</span></div>
         <div class="egg-layout"><div id="sceneBox">${eggSceneSVG()}</div>
-        <div><div class="clue-card"><span class="tag">Clue</span><span>${v.d}</span></div>
+        <div><div class="clue-card"><span class="tag">Clue</span><span>${v.h ? v.c : v.d}</span></div>
           <div class="slots" id="slots">${[...ans].map((ch, i) => ch === ' ' ? '<span class="slot space"></span>' : /[A-Z]/.test(ch) ? `<span class="slot" data-i="${i}"></span>` : `<span class="slot" style="border:0">${ch}</span>`).join('')}</div>
           <div class="letters" id="letters">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l => `<button data-l="${l}">${l}</button>`).join('')}</div>
           <div class="feedback" id="fb"></div><div id="nx"></div></div></div>`;
@@ -1898,7 +1900,7 @@ reg({
         $$('#letters button', arena).forEach(b => b.disabled = true);
         $('.eggtally', arena).innerHTML = tally();
         const fb = $('#fb', arena); fb.className = 'feedback ' + (ok ? 'ok' : 'no');
-        fb.innerHTML = ok ? `Egg saved! <span style="font-weight:400;color:var(--ink)">${v.t} it is.</span>` : `Fried! The egg-white proteins denatured. <span style="font-weight:400;color:var(--ink)">The term was <b>${v.t}</b>.</span>`;
+        fb.innerHTML = ok ? `Egg saved! <span style="font-weight:400;color:var(--ink)">${term} it is.</span>` : `Fried! The egg-white proteins denatured. <span style="font-weight:400;color:var(--ink)">The term was <b>${term}</b>.</span>`;
         $('#nx', arena).innerHTML = `<button class="btn">${wi < words.length - 1 ? 'Next egg' : 'See results'}</button>`;
         $('#nx button', arena).onclick = () => { wi++; if (wi < words.length) play(); else finishPanel(arena, g, results.filter(r => r === 'saved').length, words.length, 'Eggs saved before their proteins denatured.', () => g.run(arena, g)); };
       }
@@ -2024,7 +2026,7 @@ reg({
 const ACRO_KEYS = [
   ['PROTEIN', 'Everything in this unit builds one: DNA → RNA → PROTEIN.'],
   ['CODONS', 'Three-base "words" on mRNA, each coding for one amino acid.'],
-  ['RIBOSOME', 'The chef that reads mRNA and links amino acids together.'],
+  ['TRAITS', 'Genes code for proteins, and proteins produce your traits.'],
   ['SHAPE', 'A protein\'s shape determines its function!'],
   ['MUSTANGS', 'Every cell in a Mustang is making proteins right now.'],
   ['GENES', 'DNA recipes, each coding for one protein.']
