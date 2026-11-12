@@ -199,6 +199,16 @@ input{font:inherit;color:inherit}
 .ld-intro li.on{opacity:1;color:var(--ink);font-weight:700;border-color:var(--carolina)}
 .ld-intro li.on::before{background:var(--carolina);color:var(--on-accent)}
 .ld-intro .btn{justify-self:start}
+/* CHEER: the silly congratulation card that pops up when a finale ends */
+.cheer{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:rgba(19,41,75,.5);animation:cheerBg .3s both;cursor:pointer;transition:opacity .35s}
+.cheer.out{opacity:0}
+.cheer-card{width:min(100%,500px);background:var(--surface);color:var(--ink);border:4px solid #F2C744;border-radius:24px;padding:18px 22px 20px;text-align:center;box-shadow:var(--shadow);animation:cheerPop .6s cubic-bezier(.2,1.5,.4,1) both}
+.cheer-marty{width:min(64vw,270px);height:auto;display:block;margin:0 auto 10px;background:#FFFFFF;border-radius:16px;transform-origin:50% 90%;animation:cheerTrot .7s ease-in-out .55s 4 both}
+.cheer h2{font:800 clamp(1.5rem,6vw,2.2rem)/1.1 var(--font-display);margin:0 0 8px}
+.cheer p{margin:0 0 14px;font-size:1.08rem;font-weight:700;color:var(--ink-2);text-wrap:balance}
+@keyframes cheerBg{from{opacity:0}}
+@keyframes cheerPop{from{opacity:0;transform:scale(.4) rotate(-8deg)}}
+@keyframes cheerTrot{0%,100%{transform:none}30%{transform:translateY(-14px) rotate(-7deg)}60%{transform:rotate(4deg)}}
 .dz{position:absolute;transform:translate(-50%,-50%);min-width:96px;min-height:34px;border:2px dashed var(--carolina);border-radius:9px;background:var(--surface);display:grid;place-items:center;font-size:.8rem;font-weight:700;padding:2px 6px;text-align:center;color:var(--ink-2);line-height:1.15}
 .dz .chip{padding:4px 8px;font-size:.78rem;border-width:2px}
 .dz.filled{border-style:solid;background:var(--surface)}
@@ -1669,13 +1679,25 @@ function DnD(root, onDropFn) {
   return api;
 }
 
+/* ---------- cheer: a cheesy horse-pun card with Marty, shown when a finale ends. puns = [[headline, line], ...] ---------- */
+function cheer(puns) {
+  const [head, line] = pick(puns), d = document.createElement('div');
+  d.className = 'cheer'; d.setAttribute('role', 'status');
+  d.innerHTML = `<div class="cheer-card"><svg class="cheer-marty" viewBox="0 0 1440 810" aria-hidden="true">${mustangUse()}</svg><h2>${head}</h2><p>${line}</p><button class="btn" type="button">Giddyup!</button></div>`;
+  document.body.appendChild(d);
+  const close = () => { clearTimeout(h); d.classList.add('out'); setTimeout(() => d.remove(), 380); };
+  const h = setTimeout(close, 8000);
+  d.onclick = close; onLeave(() => { clearTimeout(h); d.remove(); });
+}
+
 /* ---------- label-the-diagram component ---------- */
 /* zones: [{id,label,x,y,px,py,mark}] in viewBox coords. x,y = drop box center, px,py = point the leader line touches.
    mark (optional) = SVG for a bracket or outline box drawn around the part, so the leader's dot can touch that instead
    of floating beside a small or wide part. It lives with the leaders, so it hides during the animations.
    intro (optional) = { title, steps: [text], play(svgEl, token, step) }: an opening animation that plays before the
-   labels appear. focusX = where the action is, so narrow screens scroll the picture to it. play calls step(i) as each step begins and must leave drawing alone once token.cancel is set. */
-function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, finale, restore, decoyNotes = {} }) {
+   labels appear. finale gets (svgEl, cap, token, replay): replay is false the first time (the picture is still frozen on the
+   labeling frame, so it can carry on from there) and true for "Replay animation". cheerPuns = puns for the card at the end. focusX = where the action is, so narrow screens scroll the picture to it. play calls step(i) as each step begins and must leave drawing alone once token.cancel is set. */
+function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, finale, cheerPuns, restore, decoyNotes = {} }) {
   const [W, H] = vb;
   host.innerHTML = `
     <div class="ld${intro ? ' ld-playing' : ''}">
@@ -1739,7 +1761,7 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, 
     fb.textContent = ok === zones.length ? `All ${ok} labels correct!` : `${ok} of ${zones.length} correct. Red boxes need another look.`;
     if (ok === zones.length) succeed();
   };
-  let running = false;
+  let running = false, finaleRuns = 0;
   async function runFinale() {
     if (running) return; running = true;
     const cap = $('#cap', host), row = $('#ldBtns', host);
@@ -1748,9 +1770,9 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, 
     bank.style.display = 'none'; $('#ldTip', host).style.display = 'none'; row.style.display = 'none';
     fb.className = 'feedback ok'; fb.textContent = 'All labels correct! Watch it happen...';
     dg.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    await finale(svgEl, cap, token);
+    await finale(svgEl, cap, token, finaleRuns++ > 0);
     if (token.cancel) return;
-    running = false; confetti(90);
+    running = false; confetti(90); if (cheerPuns) cheer(cheerPuns);
     fb.className = 'feedback ok'; fb.textContent = 'That is the whole process! Replay it as many times as you like.';
     row.style.display = ''; row.innerHTML = '<button class="btn" id="replay">Replay animation</button><button class="btn ghost" id="showLabels">Show my labels</button>';
     $('#replay', host).onclick = () => runFinale();
@@ -2361,7 +2383,7 @@ function txFrame(st) {
     const tail = txTail(nxT(h0), YBb - 60, h0 - TX_START);
     if (tail.length) {
       s += `<path d="M${nxT(h0)} ${YBb - 60} ${tail.map(p => `L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')}" style="fill:none;stroke:var(--bU);stroke-width:5;stroke-linecap:round;stroke-linejoin:round"/>`;
-      tail.forEach((p, i) => { const n = h0 - 1 - i, m = dnaToMrna[TX_T[n]]; s += miniBase(p[0], p[1], m); if (n === 9) pos.u = p; });
+      tail.forEach((p, i) => { const n = h0 - 1 - i, m = dnaToMrna[TX_T[n]]; s += miniBase(p[0], p[1], m); });
       const e = tail[tail.length - 1]; s += TB(e[0] - 6, e[1] - 14, '5′', 13, 'var(--bU)'); pos.tailEnd = e;
     }
     pos.hybrid = [];
@@ -2383,10 +2405,12 @@ const TX_STATIC = { k: 15, a: 1, pol: { x: txPolX(15), y: 310, op: 1 } };
 function pathPoint(P, s) { let acc = 0; for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], L = Math.hypot(bx - ax, by - ay); if (acc + L >= s) { const t = (s - acc) / L; return [ax + (bx - ax) * t, ay + (by - ay) * t]; } acc += L; } const [ax, ay] = P[P.length - 2], [bx, by] = P[P.length - 1], L = Math.hypot(bx - ax, by - ay); return [bx + (bx - ax) / L * (s - acc), by + (by - ay) / L * (s - acc)]; }
 /* The start of transcription, shared by the opening animation (stops on the labeling picture, k = TX_STATIC.k) and the
    finale (runs to the end of the gene). pace = [ms per base for the first few, ms per base after that]. */
-async function txOpening(g, token, kStop, pace, step = () => { }, settle = false) {
+async function txOpening(g, token, kStop, pace, step = () => { }, settle = false, kFrom = null) {
   const draw = st => { if (!token.cancel) morph(g, txFrame(st).s); };
   const T = () => performance.now() / 1000;
   const bind = txPolX(TX_START - 1);
+  // kFrom: carry on from a frozen frame (bubble already open, kFrom bases copied) instead of starting over
+  if (kFrom == null) {
   // 1. polymerase arrives
   step(0);
   await tween(token, 1900, e => draw({ k: TX_START - 1, a: 0, pol: { x: lerp(bind - 330, bind, e), y: lerp(130, 310, e), op: e }, t: T() }));
@@ -2395,26 +2419,35 @@ async function txOpening(g, token, kStop, pace, step = () => { }, settle = false
   step(1);
   await tween(token, 1700, e => draw({ k: TX_START - 1, a: Math.min(1, e * 1.35), w: e, pol: { x: bind, y: 310, op: 1 }, t: T() }));
   await wait(token, settle ? 500 : 0);
+  }
   // 3. elongation: nucleotides pair with the template one at a time
   step(2);
-  for (let k = TX_START - 1; k < kStop; k++) {
+  for (let k = kFrom ?? TX_START - 1; k < kStop; k++) {
     if (token.cancel) return;
     const n = k + 1, nb = dnaToMrna[TX_T[n]], hi = (n * 7) % TX_HOMES.length, [hx, hy] = TX_HOMES[hi];
     const dur = k < TX_START + 3 ? pace[0] : pace[1];
     // settle: the drifting nucleotides glide home over the last few bases so nothing jumps when the picture freezes
-    await tween(token, dur, e => { const x = nxT(n), y = TX_YB + 52 - 35 - 4; draw({ k: k + e * .999, a: 1, pol: { x: txPolX(k + e * .999), y: 310, op: 1 }, fly: { x: lerp(hx, x, e), y: lerp(hy, y, e) - Math.sin(e * Math.PI) * 50, b: nb }, t: T(), amp: settle ? clamp((kStop - k - e) / 3, 0, 1) : 1 }); });
+    await tween(token, dur, e => { const x = nxT(n), y = TX_YB + 52 - 35 - 4; draw({ k: k + e * .999, a: 1, pol: { x: txPolX(k + e * .999), y: 310, op: 1 }, fly: { x: lerp(hx, x, e), y: lerp(hy, y, e) - Math.sin(e * Math.PI) * 50, b: nb }, t: T(), amp: settle ? clamp((kStop - k - e) / 3, 0, 1) : kFrom != null ? clamp((k + e - kFrom) / 2, 0, 1) : 1 }); });
   }
   draw({ k: kStop, a: 1, pol: { x: txPolX(kStop), y: 310, op: 1 }, t: T(), amp: settle ? 0 : 1 });
 }
+const TX_PUNS = [
+  ['Hay, nice work!', 'You copied that gene with some serious horsepower.'],
+  ['Un-BRIDLED genius!', 'That mRNA was never going to stay stalled in the nucleus.'],
+  ['No horsing around!', 'DNA to mRNA, and you never once said neigh.'],
+  ['You are the MANE event!', 'Marty says your transcription was stable. Very stable.'],
+  ['Whoa, Nelly!', 'Marty cheered so loud that now he is a little hoarse.']
+];
 const TX_INTRO = {
   title: 'Watch how it starts', focusX: 300,
   steps: ['An enzyme lands on the DNA at the start of a gene.', 'It unzips the DNA. The opening is called the transcription bubble.', 'It copies one side of the DNA into RNA, one base at a time.'],
   async play(svgEl, token, step) { await txOpening(svgEl.querySelector('#scene'), token, TX_STATIC.k, [780, 400], step, true); await wait(token, 350); }
 };
-async function transcriptionFinale(svgEl, cap, token) {
+async function transcriptionFinale(svgEl, cap, token, replay) {
   const g = svgEl.querySelector('#scene');
   const T = () => performance.now() / 1000;
-  await txOpening(g, token, TX_END, [720, 300]);
+  // first time: pick up right where the labeling picture is frozen and finish the gene. Replay: the whole story.
+  await txOpening(g, token, TX_END, [720, replay ? 300 : 420], undefined, false, replay ? null : TX_STATIC.k);
   if (token.cancel) return;
   await wait(token, 400);
   // 4. termination: polymerase lets go, DNA zips back, mRNA released
@@ -2570,7 +2603,7 @@ async function translationFinale(svgEl, cap, token) {
 /* ---------- the two labeling activities ---------- */
 reg({
   id: 'transcribe', level: 2, icon: 'transcribe', title: 'Label: Transcription', blurb: 'Label transcription inside the nucleus, then watch it happen.',
-  how: 'We are zoomed in inside the nucleus. First, watch transcription begin. Then drag the eight labels onto the frozen picture. The moment they are all right, you will watch the whole thing, all the way to the mRNA leaving the nucleus.',
+  how: 'We are zoomed in inside the nucleus. First, watch transcription begin. Then drag the seven labels onto the frozen picture. The moment they are all right, you will watch transcription finish, all the way to the mRNA leaving the nucleus.',
   run(arena, g) {
     const sc = txFrame(TX_STATIC), mt = sc.pos.tail;
     const svg = `<svg viewBox="0 0 900 560" role="img" aria-label="Transcription inside the nucleus">${floatCSS}<g id="bg">${txBG()}</g><g id="scene">${sc.s}</g><g id="leaders"></g></svg>`;
@@ -2581,8 +2614,6 @@ reg({
       { id: 'pol', label: 'RNA polymerase', x: 640, y: 120, px: TX_STATIC.pol.x + 140 * Math.cos(pa), py: TX_STATIC.pol.y + 130 * Math.sin(pa) },
       // mRNA: touch the backbone between the last two bases (not on a letter)
       { id: 'mrna', label: 'mRNA', x: 300, y: 36, px: (mt[mt.length - 1][0] + mt[mt.length - 2][0]) / 2, py: (mt[mt.length - 1][1] + mt[mt.length - 2][1]) / 2 },
-      // Uracil: touch the left edge of the U square so the letter stays visible
-      { id: 'u', label: 'Uracil', x: 210, y: 215, px: sc.pos.u[0] - 16, py: sc.pos.u[1] + 2 },
       { id: 'pore', label: 'Nuclear pore', x: 836, y: 36, px: TX_EXIT[0], py: TX_EXIT[1] },
       // DNA double helix: a bracket hugging BOTH strands at the end of the DNA; the leader touches the bracket
       { id: 'dna', label: 'DNA double helix', x: 92, y: 532, px: 61, py: 310, mark: `<path d="M70 ${TX_YT - 13} L61 ${TX_YT - 13} L61 ${TX_YB + 13} L70 ${TX_YB + 13}" ${ink}/>` },
@@ -2595,7 +2626,7 @@ reg({
     labelDiagram(wrap, {
       svg, vb: [900, 560], zones,
       onCheck: (first, tot) => { record(g.id, first, tot); toast(`Saved: ${first}/${tot} on your first check`); },
-      intro: TX_INTRO, finale: transcriptionFinale,
+      intro: TX_INTRO, finale: transcriptionFinale, cheerPuns: TX_PUNS,
       restore: svgEl => { svgEl.querySelector('#scene').innerHTML = txFrame(TX_STATIC).s; }
     });
     wrap.querySelector('.diagram').style.minWidth = '640px';
