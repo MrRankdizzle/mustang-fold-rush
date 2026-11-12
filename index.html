@@ -19,7 +19,7 @@
    game progress in codonRodeo.v1, and are applied here before the page paints so nothing flashes. */
 try{const d=document.documentElement,o=JSON.parse(localStorage.getItem('mustangFoldRush.settings')||'{}');
   if(o.theme==='light'||o.theme==='dark')d.dataset.theme=o.theme;if(o.text==='large'||o.text==='xl')d.dataset.text=o.text;
-  d.classList.toggle('rm',o.motion==='reduce');d.classList.toggle('cb',o.cvd==='cb');d.classList.toggle('dys',o.dys==='on');d.classList.toggle('hc',o.hc==='on');d.classList.toggle('tts',o.tts==='on')}catch(e){}
+  d.classList.toggle('rm',o.motion==='reduce');d.classList.toggle('cb',o.cvd==='cb');d.classList.toggle('dys',o.dys==='on');d.classList.toggle('hc',o.hc==='on');d.classList.toggle('tts',o.tts==='on');d.classList.toggle('ez',o.focus==='on')}catch(e){}
 </script>
 <style>
 /* Layout concept: a rodeo "program" — a menu of corrals (levels) holding game cards; each game opens as a full working arena with a slim status bar. */
@@ -1063,6 +1063,33 @@ input[type=range]{width:100%;accent-color:var(--carolina)}
 .pin-prompt .n svg{width:26px;height:26px;display:block}
 @media (max-width:560px){.pin-intro{font-size:.88rem;padding:8px 14px 8px 8px;gap:10px;border-radius:18px}.pi-ic{width:28px;height:28px}.pi-dots{display:none}}
 
+/* =================== FOCUS MODE (Settings) + NOTE CARD (My Evidence) =================== */
+.ez-tag{display:inline-flex;align-items:center;border:1px solid var(--carolina);background:var(--sky-soft);color:var(--ink);border-radius:999px;padding:1px 9px;font:700 .74rem var(--font-body);letter-spacing:.04em;margin-right:4px;vertical-align:middle}
+.hb-chip.ez-on{cursor:pointer;color:#13294B;background:#F2C744;border-color:#F2C744}
+.ez-bank{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0;padding:10px;border-radius:12px;background:var(--surface-2)}
+.ez-bank b{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin-right:4px}
+.ez-word{border:2px solid var(--line);background:var(--surface);border-radius:9px;padding:4px 10px;font-weight:700;font-size:.95rem}
+.ez-word.used{opacity:.45;text-decoration:line-through}
+.ez-key{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:0 0 12px;padding:8px 12px;border-radius:12px;background:var(--surface-2);color:var(--ink);font-weight:700}
+.ez-key>b{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.ez-key span{display:inline-flex;align-items:center;gap:4px}.ez-key i{font-style:normal}.ez-key em{font-size:.8rem;color:var(--ink-2);font-style:normal}
+.dz.given{border-color:var(--line);background:var(--surface-2)}
+.chip.given,.dz .chip.given{cursor:default;border-color:var(--line);background:var(--surface-2);color:var(--ink-2)}
+.ev-fz{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);font-size:.7rem;font-weight:700;color:var(--ink-2);white-space:nowrap;vertical-align:middle}
+.nc-lead{margin:0 0 12px;color:var(--ink-2);font-size:.95rem}
+.nc-paper{border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
+.nc-head{margin:0;padding:10px 16px;font:800 1rem var(--font-display);border-bottom:2px solid color-mix(in srgb,var(--bad) 55%,var(--line))}
+.nc-list{list-style:none;margin:0;padding:0;counter-reset:nc}
+.nc-list li{position:relative;display:grid;gap:3px;justify-items:start;padding:10px 16px 10px 48px;border-bottom:1px solid var(--line);counter-increment:nc}
+.nc-list li:last-child{border-bottom:0}
+.nc-list li::before{content:counter(nc);position:absolute;left:14px;top:11px;width:24px;height:24px;border-radius:50%;background:var(--carolina);color:var(--on-accent);font:700 .8rem var(--font-body);display:grid;place-items:center}
+.nc-list b{font-size:1.02rem}.nc-list span{font-size:.95rem;line-height:1.4}.nc-list em{font-size:.88rem;color:var(--ink-2);line-height:1.4}
+.nc-list .linkbtn{font-size:.85rem;margin-top:2px}
+.nc-solid{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:14px}
+.nc-solid>b{flex-basis:100%;font-size:.9rem}
+.nc-solid span{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--good);background:var(--good-bg);border-radius:999px;padding:3px 10px;font-size:.84rem;font-weight:700}
+.nc-how{margin:14px 0 0;padding-left:1.2em;font-size:.9rem;color:var(--ink-2);display:grid;gap:4px}
+
 /* =================== SMOOTH ANIMATION =================== */
 /* Pictures that redraw every frame get their own GPU layer, so each frame repaints only that picture and not the
    gradients, masks, and shadows around it (the hero band especially). Keep this list short: every layer costs memory. */
@@ -1293,6 +1320,98 @@ const CLUES = {
 };
 VOCAB.forEach(v => { v.w = v.t.toUpperCase().replace(/[^A-Z]/g, ''); v.single = !/\s/.test(v.t); v.x = v.x || v.w; v.c = CLUES[v.x] || v.c || v.d; });
 const vocabByTerm = t => VOCAB.find(v => v.t === t);
+/* Focus mode: the short list of must-know terms, each with a plain-language clue (short sentences, everyday words, and
+   the clue never says the answer). Level 1 games use only these terms while Focus mode is on. */
+const EASY = {
+  DNA: 'The molecule that stores your genes. It stays in the nucleus.',
+  GENE: 'One section of DNA. It is the recipe for one protein.',
+  RNA: 'A copy of a gene. It has only one strand.',
+  MRNA: 'The messenger. It carries the recipe out of the nucleus.',
+  TRNA: 'The delivery truck. It brings amino acids to the ribosome.',
+  TRANSCRIPTION: 'Step 1: DNA is copied into mRNA.',
+  TRANSLATION: 'Step 2: a ribosome reads mRNA and builds a protein.',
+  NUCLEUS: 'The part of the cell where DNA is kept.',
+  CYTOPLASM: 'The jelly-like part of the cell, outside the nucleus.',
+  RIBOSOME: 'The "chef" of the cell. It builds proteins.',
+  CODON: 'Three mRNA letters in a row. They code for one amino acid.',
+  AMINOACID: 'The building block of a protein. There are 20 kinds.',
+  PROTEIN: 'A folded chain of amino acids. It does a job in the cell.',
+  TRAIT: 'Something you can see, like eye color. Proteins make it.'
+};
+const easyVocab = (oneWord) => VOCAB.filter(v => EASY[v.x] && (!oneWord || v.single));
+const ezBank = (words, title = 'Word bank') => `<div class="ez-bank"><b>${title}</b>${[...words].sort().map(w => `<span class="ez-word" data-w="${esc(w)}">${esc(w)}</span>`).join('')}</div>`;
+
+/* ---------- note card: what to write down, built from the mistakes a student actually made ---------- */
+/* Every game calls flag(key, ok) when a student gets a term or idea right or wrong. key is a vocab term (any spelling a
+   game uses: "ribosomes", "POLYMERASE", "Polypeptide chain") or one of the big-idea ids below. My Evidence turns the
+   trouble spots into note card recommendations: the idea in plain words, plus a memory tip. */
+const NOTE_SAY = {
+  'Central dogma': ['Genetic information flows one way: DNA → RNA → protein.', 'Draw it with two arrows. Label the first arrow transcription and the second arrow translation.'],
+  'DNA': ['Stores all of your genes. It has two strands and stays in the nucleus.', 'DNA is the cookbook. It never leaves the nucleus.'],
+  'Gene': ['One section of DNA that codes for one protein.', 'One gene = one recipe in the cookbook.'],
+  'RNA': ['A single-stranded copy of a gene. It uses U (uracil) instead of T.', 'One strand and no T. If you see a U, it is RNA.'],
+  'Uracil': ['The RNA base that takes the place of thymine (T). It pairs with A.', 'U replaces T: "U are in RNA."'],
+  'Transcription': ['Step 1: a gene in DNA is copied into mRNA, inside the nucleus.', 'A script is a written copy. TranSCRIPTion = writing a copy of the gene.'],
+  'RNA polymerase': ['The enzyme that unzips DNA and builds the mRNA strand.', 'Names that end in -ase are enzymes. This one builds RNA.'],
+  'Template strand': ['The one side of the DNA that is read to build mRNA.', 'A template is a pattern you copy from.'],
+  'mRNA': ['Messenger RNA. It carries the recipe from the nucleus to a ribosome.', 'm = messenger.'],
+  'Nucleus': ['Where DNA is kept and where transcription happens.', 'The nucleus is the office where the cookbook stays.'],
+  'Translation': ['Step 2: a ribosome reads mRNA and links amino acids into a chain, in the cytoplasm.', 'To translate is to change languages: from base letters to amino acids.'],
+  'Ribosome': ['Reads mRNA three bases at a time and builds the polypeptide.', 'The ribosome is the chef that follows the recipe.'],
+  'rRNA': ['Ribosomal RNA. Ribosomes are made of it.', 'r = ribosome.'],
+  'tRNA': ['Transfer RNA. It brings the matching amino acid to the ribosome.', 't = transfer. Think of a delivery truck.'],
+  'Codon': ['Three mRNA bases that code for one amino acid.', 'A codon is a three-letter code word, and it is on the mRNA.'],
+  'Anticodon': ['Three tRNA bases that pair with an mRNA codon.', 'Anti = opposite. It is the opposite match of the codon, and it is on the tRNA.'],
+  'Start codon': ['AUG. It tells the ribosome where to begin and codes for methionine (Met).', '"School STARTS in AUGust": AUG.'],
+  'Stop codon': ['UAA, UAG or UGA. It ends translation. No amino acid is added.', '"U Are Away, U Are Gone, U Go Away."'],
+  'Cytoplasm': ['The jelly-like part of the cell outside the nucleus. Translation happens here.', 'Ribosomes are out in the cytoplasm, so that is where proteins get built.'],
+  'Amino acid': ['The building block (monomer) of proteins. There are 20 kinds.', 'Amino acids are the beads. A protein is the necklace.'],
+  'Peptide bond': ['The bond that links one amino acid to the next.', 'Peptide bonds are the string between the beads.'],
+  'Polypeptide': ['A chain of amino acids linked by peptide bonds.', 'Poly = many. Many peptide bonds make one long chain.'],
+  'Protein': ['One or more polypeptides folded into a shape that does a job.', 'Chain + folding = protein. It is the finished meal.'],
+  'Trait': ['A characteristic, like eye color, that your proteins produce.', 'Gene → protein → trait.'],
+  'Primary structure': ['1°: the order of the amino acids in the chain.', 'Primary = first = just the letters in order.'],
+  'Secondary structure': ['2°: the chain coils into a helix or folds into a pleated sheet. Hydrogen bonds hold it.', '2° has two shapes: helix and sheet.'],
+  'Tertiary structure': ['3°: one whole chain folded into a 3-D shape.', 'Tertiary = 3 = 3-D.'],
+  'Quaternary structure': ['4°: two or more chains joined together, like hemoglobin.', 'Quaternary = 4 = a team of chains. Hemoglobin has four.'],
+  'Helical': ['A 2° shape: the chain coils up like a spring.', 'Helix = Slinky.'],
+  'Pleated': ['A 2° shape: the chain folds back and forth into a flat sheet.', 'Pleated = folded like a paper fan.'],
+  'Hydrogen bond': ['A weak attraction that holds helices and pleated sheets in shape.', 'Hydrogen bonds are weak, so heat breaks them first.'],
+  'Heavy metals': ['Toxic metals such as lead and mercury. They can denature proteins.', 'Heavy metals break the bonds that hold a protein in shape.'],
+  'Denaturation': ['A protein loses its shape (from heat, pH and more), so it can no longer do its job.', 'Think of a cooked egg white. It can never go back to clear.'],
+  'Enzyme': ['A protein that speeds up a chemical reaction. Its shape must fit its target.', 'Lock and key: wrong shape, no fit, no reaction.'],
+  // big ideas (not single vocab words)
+  pairing: ['DNA to mRNA base pairing: A → U, T → A, G → C, C → G.', 'G and C always go together. A in DNA gets U in RNA, because RNA has no T.', 'Base pairing: DNA to mRNA'],
+  wheel: ['Read a codon one base at a time: 1st base, then 2nd, then 3rd. On the wheel, start in the center and move out.', 'Put your finger on the first base and do not jump ahead. Three bases = one amino acid.', 'Reading a codon'],
+  txvstl: ['Transcription: in the nucleus, DNA → mRNA. Translation: in the cytoplasm, mRNA → polypeptide. Folding: the chain becomes a 3-D shape.', 'Make a two-column chart: where it happens, what goes in, what comes out.', 'Transcription or translation?'],
+  molecules: ['DNA: two strands, has T, stays in the nucleus. RNA: one strand, has U, leaves the nucleus. Protein: made of amino acids, folds into a shape.', 'See a U? It is RNA. See amino acid names like Met or Ala? It is a protein.', 'DNA, RNA, or protein?'],
+  levels: ['1° = order of amino acids. 2° = helix or pleated sheet. 3° = one chain folded in 3-D. 4° = two or more chains together.', 'Alphabet → words → sentences → paragraphs.', 'The four levels of protein structure'],
+  bonds: ['Interactions fold the chain: hydrogen bonds, ionic bonds (+ and −), disulfide bridges (S–S), and hydrophobic parts hiding inside.', 'Look for the clue: + and − means ionic, S–S means disulfide, water-fearing parts tuck inside.', 'What holds a protein in its 3-D shape'],
+  shape: ['Amino acid sequence → shape → function. Change the order and you change the shape and the job.', 'Same letters, new order, new word. Same amino acids, new order, new protein.', 'Shape decides the job'],
+  jobs: ['Hemoglobin carries oxygen. Keratin strengthens hair and nails. Enzymes speed up reactions. Insulin signals cells to take in glucose. Antibodies bind invaders. Myosin helps muscles contract.', 'Pick the two you mix up most and draw a tiny picture for each one.', 'Proteins and their jobs'],
+  sickle: ['One DNA base changes → the mRNA codon changes (GAG to GUG) → valine replaces glutamic acid → hemoglobin folds and clumps differently → red blood cells sickle.', 'Follow the central dogma in order: DNA, then mRNA, then amino acid, then shape, then the cell.', 'Sickle cell: from one base to a new shape']
+};
+const noteNorm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+const NOTE_ALIAS = {};
+VOCAB.forEach(v => [v.t, v.h, v.x, v.w].forEach(a => { if (a) NOTE_ALIAS[noteNorm(a)] = v.t; }));
+Object.entries({ ribosomelargesubunit: 'Ribosome', ribosomesmallsubunit: 'Ribosome', polypeptidechain: 'Polypeptide', dnadoublehelix: 'DNA', aug: 'Start codon', sequence: 'Primary structure', shape: 'shape', function: 'shape', folds: 'shape', ionicbond: 'bonds', hydrophobicinteraction: 'bonds', disulfidebridge: 'bonds', freernanucleotide: 'RNA' }).forEach(([a, t]) => NOTE_ALIAS[a] = t);
+function noteKey(s) { if (NOTE_SAY[s]) return s; const n = noteNorm(s); return NOTE_ALIAS[n] || NOTE_ALIAS[n.replace(/s$/, '')] || null; }
+const noteTitle = k => NOTE_SAY[k][2] || k;
+// saved as notes[key] = [misses, hits, id of the game with the latest miss]
+function flag(key, ok) {
+  const k = noteKey(key); if (!k) return;
+  const N = store.data.notes = store.data.notes || {}, r = N[k] = N[k] || [0, 0, ''];
+  if (ok) r[1]++; else { r[0]++; r[2] = current || r[2]; }
+  store.save();
+}
+// trouble spots first: missed at least once, and still missed in at least a quarter of the tries (so practice clears them)
+function noteRecs() {
+  const N = store.data.notes || {}, rows = Object.keys(N).filter(k => NOTE_SAY[k]).map(k => ({ k, m: N[k][0], h: N[k][1], g: N[k][2] }));
+  return {
+    work: rows.filter(r => r.m > 0 && r.m / (r.m + r.h) >= .25).sort((a, b) => b.m * b.m / (b.m + b.h) - a.m * a.m / (a.m + a.h)).slice(0, 6),
+    solid: rows.filter(r => r.h >= 2 && r.m / (r.m + r.h) < .25).sort((a, b) => b.h - a.h).slice(0, 10)
+  };
+}
 
 /* ---------- storage (best effort) ---------- */
 const STORE_KEY = 'codonRodeo.v1';
@@ -1305,6 +1424,7 @@ store.load();
 function record(id, correct, total, note) {
   const pct = total ? Math.round(100 * correct / total) : 0;
   const g = store.data.games[id] || { best: 0, plays: 0 };
+  if (pct >= g.best) g.fz = easy(); // was the best score earned in Focus mode? (shown on My Evidence)
   g.plays++; g.last = pct; g.best = Math.max(g.best, pct); g.when = new Date().toLocaleString();
   if (note) g.note = note;
   store.data.games[id] = g; store.save();
@@ -1414,11 +1534,14 @@ const chev = `<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"
 // Saved under its own key, separate from progress (codonRodeo.v1), so erasing scores never resets a student's
 // accommodations. The <head> script applies the saved classes before the page paints.
 const SET_KEY = 'mustangFoldRush.settings';
-const SET_OK = { theme: ['auto', 'light', 'dark'], text: ['normal', 'large', 'xl'], motion: ['full', 'reduce'], hc: ['off', 'on'], dys: ['off', 'on'], ruler: ['off', 'on'], tts: ['off', 'on'], rate: ['normal', 'slow'], cvd: ['default', 'cb'] };
+const SET_OK = { theme: ['auto', 'light', 'dark'], text: ['normal', 'large', 'xl'], motion: ['full', 'reduce'], hc: ['off', 'on'], dys: ['off', 'on'], ruler: ['off', 'on'], tts: ['off', 'on'], rate: ['normal', 'slow'], cvd: ['default', 'cb'], focus: ['off', 'on'] };
 const SET = (() => { let o = {}; try { o = JSON.parse(localStorage.getItem(SET_KEY) || '{}') || {}; } catch (e) { } const r = {}; for (const k in SET_OK) r[k] = SET_OK[k].includes(o[k]) ? o[k] : SET_OK[k][0]; return r; })();
 // Motion is Full for everyone unless the student picks Reduced here. Never read the device's prefers-reduced-motion:
 // many school computers have it switched on, and following it froze half the animations (the "choppy" look).
 function reducedMotion() { return SET.motion === 'reduce'; }
+// Focus mode (Settings): every game asks for less at one time. Fewer terms, shorter rounds, plain-language clues, word
+// banks, and labels that are already filled in. Games read easy() when they start, so changing it restarts the game.
+const easy = () => SET.focus === 'on';
 const TTS_OK = (() => { try { return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance === 'function'; } catch (e) { return false; } })();
 const ICO_MENU = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" style="fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round"/></svg>`;
 const ICO_SPEAK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 9.5h3.8L12 5.6v12.8l-4.7-3.9H3.5z" style="fill:currentColor"/><path d="M15.4 9.2a4 4 0 0 1 0 5.6M18 6.6a7.6 7.6 0 0 1 0 10.8" style="fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round"/></svg>`;
@@ -1430,7 +1553,7 @@ function applySettings() {
   if (SET.theme === 'auto') d.removeAttribute('data-theme'); else d.dataset.theme = SET.theme;
   if (SET.text === 'normal') d.removeAttribute('data-text'); else d.dataset.text = SET.text;
   d.classList.toggle('rm', reducedMotion()); d.classList.toggle('cb', SET.cvd === 'cb'); d.classList.toggle('dys', SET.dys === 'on');
-  d.classList.toggle('hc', SET.hc === 'on'); d.classList.toggle('tts', TTS_OK && SET.tts === 'on');
+  d.classList.toggle('hc', SET.hc === 'on'); d.classList.toggle('tts', TTS_OK && SET.tts === 'on'); d.classList.toggle('ez', easy());
   const m = $('meta[name="theme-color"]'); if (m) m.content = isDark() ? '#0D1828' : '#13294B';
   ruler(SET.ruler === 'on');
   if (SET.tts !== 'on') { stopSpeech(); hideSayPop(); }
@@ -1441,6 +1564,7 @@ function setSetting(k, v) {
   // sizes and fonts changed: let diagrams, canvases, and the Invaders field measure again
   if (k === 'text' || k === 'dys') requestAnimationFrame(() => dispatchEvent(new Event('resize')));
   if (k === 'motion') { syncSMIL(); if (titleCtl) titleCtl.restart(); }
+  if (k === 'focus') { route(current); toast(v === 'on' ? 'Focus mode is on. Every game is shorter and simpler now.' : 'Focus mode is off.', 2600); }
 }
 /* reading ruler: a soft gold band that follows the pointer or finger */
 let RULER = null;
@@ -1505,6 +1629,9 @@ function openSettings() {
   const seg = (k, label, opts, note = '') => `<fieldset class="set-row"><legend>${label}</legend>${note ? `<p class="set-note">${note}</p>` : ''}<div class="set-seg">${opts.map(([v, t]) => `<label${SET[k] === v ? ' class="on"' : ''}><input type="radio" name="set-${k}" value="${v}"${SET[k] === v ? ' checked' : ''}>${t}</label>`).join('')}</div></fieldset>`;
   const sw = (k, label, note) => `<button type="button" class="set-sw" role="switch" data-sw="${k}" aria-checked="${SET[k] === 'on'}"><span><b>${label}</b><span class="set-note">${note}</span></span><span class="sw-track" aria-hidden="true"></span></button>`;
   const body = `
+    <section class="set-sec" aria-labelledby="setS0"><h3 id="setS0">Make it simpler</h3>
+      ${sw('focus', 'Focus mode', 'Fewer words at a time, shorter rounds, simpler directions, and extra hints in every game.')}
+    </section>
     <section class="set-sec" aria-labelledby="setS1"><h3 id="setS1">See it</h3>
       ${seg('text', 'Text size', [['normal', '<span class="aa" style="font-size:1rem">A</span>Normal'], ['large', '<span class="aa" style="font-size:1.25rem">A</span>Large'], ['xl', '<span class="aa" style="font-size:1.5rem">A</span>Extra large']])}
       ${seg('theme', 'Light or dark', [['auto', 'Match my device'], ['light', 'Light'], ['dark', 'Dark']])}
@@ -1556,12 +1683,12 @@ function openSettings() {
   $('#setWipeNo', layer).onclick = () => { wipeBox.hidden = true; $('#setWipe', layer).hidden = false; $('#setWipe', layer).focus(); };
   $('#setWipeYes', layer).onclick = () => {
     // progress only: name, scores, reflection, Invaders high score. Accessibility settings live under their own key and stay.
-    store.data = { name: '', games: {} }; try { localStorage.removeItem(STORE_KEY); } catch (e) { }
+    store.data = { name: '', games: {}, notes: {} }; try { localStorage.removeItem(STORE_KEY); } catch (e) { }
     close(); homeIntroDone = false; go(''); toast('Progress erased. Type your name to start fresh.', 3200);
   };
   $('#setReset', layer).onclick = () => {
-    for (const k in SET_OK) SET[k] = SET_OK[k][0]; saveSettings(); applySettings(); syncSMIL(); if (titleCtl) titleCtl.restart();
-    requestAnimationFrame(() => dispatchEvent(new Event('resize'))); close(); openSettings(); toast('Settings reset');
+    const wasFocus = easy(); for (const k in SET_OK) SET[k] = SET_OK[k][0]; saveSettings(); applySettings(); syncSMIL(); if (titleCtl) titleCtl.restart();
+    requestAnimationFrame(() => dispatchEvent(new Event('resize'))); close(); if (wasFocus) route(current); openSettings(); toast('Settings reset');
   };
 }
 applySettings();
@@ -1579,7 +1706,7 @@ function topbar() { return `<header class="topbar home-top">${topActions()}</hea
 function shell(g) {
   app().innerHTML = `<div class="wrap">
     <div class="gbar"><button class="btn ghost small" data-home aria-label="Back to main menu">${chev}<span>Menu</span></button><span class="lvl">Level ${g.level}</span><h1>${g.title}</h1><span class="spacer"></span><button class="btn ghost small" data-restart aria-label="Start this game over" title="Start this game over">${restartIcon}<span class="lbl">Start over</span></button>${topActions()}</div>
-    <p class="howto">${sayBtn('', 'Read the directions out loud')}<span>${g.how}</span></p><div class="arena" id="arena"></div></div>`;
+    <p class="howto">${sayBtn('', 'Read the directions out loud')}<span>${easy() ? '<button type="button" class="ez-tag" data-settings title="Focus mode is on. Tap to change it in Settings.">Focus mode</button> ' : ''}${easy() && g.howEasy || g.how}</span></p><div class="arena" id="arena"></div></div>`;
   return $('#arena');
 }
 let current = null;
@@ -1695,6 +1822,7 @@ function cheer(puns) {
 /* zones: [{id,label,x,y,px,py,mark}] in viewBox coords. x,y = drop box center, px,py = point the leader line touches.
    mark (optional) = SVG for a bracket or outline box drawn around the part, so the leader's dot can touch that instead
    of floating beside a small or wide part. It lives with the leaders, so it hides during the animations.
+   given (optional, Focus mode) = this label is already placed and locked, so the student has fewer to do.
    intro (optional) = { title, steps: [text], play(svgEl, token, step) }: an opening animation that plays before the
    labels appear. finale gets (svgEl, cap, token, replay): replay is false the first time (the picture is still frozen on the
    labeling frame, so it can carry on from there) and true for "Replay animation". cheerPuns = puns for the card at the end. focusX = where the action is, so narrow screens scroll the picture to it. play calls step(i) as each step begins and must leave drawing alone once token.cancel is set. */
@@ -1706,7 +1834,7 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, 
     <div class="caption-bar" id="cap" hidden aria-live="polite"></div></div>
     <div class="ld-side">
     ${intro ? `<div class="ld-intro" id="ldIntro"><p class="ld-intro-h">${sayBtn(intro.steps.map((t, i) => `Step ${i + 1}. ${plain(t)}`).join(' '), 'Read the steps out loud')}<span>${intro.title}</span></p><ol aria-live="polite">${intro.steps.map(t => `<li><span>${t}</span></li>`).join('')}</ol><button class="btn small" id="introSkip">Skip to the labels</button></div>` : ''}
-    <p class="muted" id="ldTip" style="font-size:.9rem">Drag each label to a dashed box, or tap a label and then tap a box. Tap a placed label to send it back.</p>
+    <p class="muted" id="ldTip" style="font-size:.9rem">Drag each label to a dashed box, or tap a label and then tap a box. Tap a placed label to send it back.${zones.some(z => z.given) ? ' The gray labels are already done for you.' : ''}</p>
     <div class="bank" id="bank" data-drop="bank"></div>
     <div class="feedback" id="fb"></div>
     <div class="row" id="ldBtns"><button class="btn ghost" id="chk">Show wrong labels</button><button class="btn ghost" id="reset">Reset</button>${intro ? '<button class="btn ghost" id="introAgain">Watch the start again</button>' : ''}</div>
@@ -1718,13 +1846,16 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, 
   zones.forEach((z, i) => {
     const d = document.createElement('div'); d.className = 'dz'; d.dataset.drop = z.id; d.dataset.zone = z.id; d.style.setProperty('--i', i);
     d.style.left = (100 * z.x / W) + '%'; d.style.top = (100 * z.y / H) + '%';
-    d.innerHTML = `<span class="dz-num">${i + 1}</span><span class="ph">?</span>`; dg.appendChild(d);
+    d.innerHTML = `<span class="dz-num">${i + 1}</span>${z.given ? `<span class="chip given" data-label="${esc(z.label)}">${esc(z.label)}</span>` : '<span class="ph">?</span>'}`; if (z.given) d.classList.add('filled', 'given'); dg.appendChild(d);
   });
-  const labels = shuffle([...zones.map(z => z.label), ...distractors]);
+  const ask = zones.filter(z => !z.given), wrongOnce = new Set();
+  const noteWrong = () => ask.forEach(z => { const c = zoneChip(z); if (c && c.dataset.label !== z.label && !wrongOnce.has(z.id)) { wrongOnce.add(z.id); flag(z.label, false); } });
+  const labels = shuffle([...ask.map(z => z.label), ...distractors]);
   bank.innerHTML = labels.map(l => `<span class="chip" data-drag data-label="${esc(l)}">${esc(l)}</span>`).join('');
   let first = true, firstScore = null;
   const fb = $('#fb', host);
   DnD(host, (chip, target) => {
+    if (target.classList.contains('given')) return;
     $$('.dz', dg).forEach(z => z.classList.remove('ok', 'no'));
     if (target.dataset.drop !== 'bank' && decoyNotes[chip.dataset.label]) { bank.appendChild(chip); bump(chip); fb.className = 'feedback no'; fb.textContent = decoyNotes[chip.dataset.label]; return; }
     if (target.dataset.drop === 'bank') { bank.appendChild(chip); }
@@ -1740,27 +1871,30 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, 
   const zoneChip = z => $(`[data-zone="${z.id}"] .chip`, dg);
   function autoCheck() {
     if (solved || !zones.every(zoneChip)) return;
-    const ok = zones.filter(z => zoneChip(z).dataset.label === z.label).length;
+    const ok = ask.filter(z => zoneChip(z).dataset.label === z.label).length;
     if (first) { firstScore = ok; first = false; }
-    if (ok === zones.length) return succeed();
+    if (ok === ask.length) return succeed();
+    noteWrong();
     fb.className = 'feedback no'; fb.textContent = 'Every box is filled, but some labels are in the wrong spot. Swap some, or press "Show wrong labels."';
+    if (easy()) $('#chk', host).onclick(); // Focus mode marks the wrong boxes right away
   }
   function succeed() {
     solved = true;
     zones.forEach(z => $(`[data-zone="${z.id}"]`, dg).classList.add('ok'));
     $$('.chip', host).forEach(c => c.removeAttribute('data-drag'));
-    fb.className = 'feedback ok'; fb.textContent = `All ${zones.length} labels correct!`;
+    fb.className = 'feedback ok'; fb.textContent = `All ${ask.length} labels correct!`;
+    ask.forEach(z => { if (!wrongOnce.has(z.id)) flag(z.label, true); });
     if (!finale) { bank.style.display = 'none'; $('#ldTip', host).style.display = 'none'; $('#ldBtns', host).style.display = 'none'; }
-    onCheck && onCheck(firstScore ?? zones.length, zones.length);
+    onCheck && onCheck(firstScore ?? ask.length, ask.length);
     if (finale) setTimeout(runFinale, 500); else confetti();
   }
   $('#chk', host).onclick = () => {
     if (solved) return;
-    let ok = 0;
-    zones.forEach(z => { const el = $(`[data-zone="${z.id}"]`, dg); const c = el.querySelector('.chip'); const good = c && c.dataset.label === z.label; el.classList.toggle('ok', !!good); el.classList.toggle('no', !good); if (good) ok++; });
-    fb.className = 'feedback ' + (ok === zones.length ? 'ok' : 'no');
-    fb.textContent = ok === zones.length ? `All ${ok} labels correct!` : `${ok} of ${zones.length} correct. Red boxes need another look.`;
-    if (ok === zones.length) succeed();
+    let ok = 0; noteWrong();
+    ask.forEach(z => { const el = $(`[data-zone="${z.id}"]`, dg); const c = el.querySelector('.chip'); const good = c && c.dataset.label === z.label; el.classList.toggle('ok', !!good); el.classList.toggle('no', !good); if (good) ok++; });
+    fb.className = 'feedback ' + (ok === ask.length ? 'ok' : 'no');
+    fb.textContent = ok === ask.length ? `All ${ok} labels correct!` : `${ok} of ${ask.length} correct. Red boxes need another look.`;
+    if (ok === ask.length) succeed();
   };
   let running = false, finaleRuns = 0;
   async function runFinale() {
@@ -1779,7 +1913,7 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, 
     $('#replay', host).onclick = () => runFinale();
     $('#showLabels', host).onclick = () => { restore && restore(svgEl); $$('.dz', dg).forEach(z => z.style.visibility = ''); lead.style.visibility = ''; };
   }
-  $('#reset', host).onclick = () => { $$('.dz .chip', dg).forEach(c => bank.appendChild(c)); $$('.dz', dg).forEach(z => { z.className = 'dz'; if (!z.querySelector('.ph')) z.insertAdjacentHTML('beforeend', '<span class="ph">?</span>'); }); fb.textContent = ''; };
+  $('#reset', host).onclick = () => { $$('.dz:not(.given) .chip', dg).forEach(c => bank.appendChild(c)); $$('.dz:not(.given)', dg).forEach(z => { z.className = 'dz'; if (!z.querySelector('.ph')) z.insertAdjacentHTML('beforeend', '<span class="ph">?</span>'); }); fb.textContent = ''; };
   if (intro) {
     const ld = $('.ld', host), lis = $$('#ldIntro li', host);
     let tok = null;
@@ -1914,15 +2048,16 @@ function eggSceneSVG() {
 reg({
   id: 'egg', level: 1, icon: 'egg', title: 'Don\'t Fry the Egg', blurb: 'Spell the term before the heat denatures the egg.',
   how: 'Read the clue and guess the term one letter at a time. Every wrong letter turns up the burner, and you can watch an egg-white protein unravel. Six misses and the egg is fried (denatured)!',
+  howEasy: 'Read the clue. The answer is one of the words in the word bank, and the first letter is done for you. Tap letters to spell it. Four words in all.',
   run(arena, g) {
-    const words = shuffle(VOCAB.filter(v => v.w.length >= 5 && v.t.length <= 20)).slice(0, 6); let wi = 0; const results = [];
+    const ez = easy(), words = shuffle(ez ? easyVocab().filter(v => v.w.length >= 4) : VOCAB.filter(v => v.w.length >= 5 && v.t.length <= 20)).slice(0, ez ? 4 : 6); let wi = 0; const results = [];
     let heatNow = 22, raf = null, look = null; onLeave(() => cancelAnimationFrame(raf));
     const tally = () => words.map((_, i) => { const r = results[i]; const yolk = r === 'saved' ? '#F6B526' : r === 'fried' ? '#9C6A2E' : 'none'; return `<svg viewBox="0 0 24 24" aria-label="${r || 'not played'}"><path d="M3 13 C2 7 8 5 12 6 C17 4 22 8 21 13 C21 18 16 20 12 19 C7 21 3 18 3 13Z" style="fill:${r ? '#FFFFFF' : 'none'};stroke:var(--ink-2);stroke-width:1.5"/><circle cx="12" cy="12.5" r="4" style="fill:${yolk};stroke:${r ? 'none' : 'var(--ink-2)'};stroke-width:1.2"/></svg>`; }).join('');
     function play() {
       const v = words[wi], term = v.h || v.t, ans = term.toUpperCase(); const guessed = new Set(); let wrong = 0, over = false;
       arena.innerHTML = `<div class="status"><div class="stat"><span>Term</span>${wi + 1} / ${words.length}</div><span class="eggtally" aria-label="Eggs saved and fried">${tally()}</span></div>
         <div class="egg-layout"><div id="sceneBox">${eggSceneSVG()}</div>
-        <div><div class="clue-card"><span class="tag">Clue</span><span>${v.h ? v.c : v.d}</span></div>
+        <div><div class="clue-card"><span class="tag">Clue</span><span>${ez ? EASY[v.x] : v.h ? v.c : v.d}</span></div>${ez ? ezBank(words.map(w => w.t), 'It is one of these') : ''}
           <div class="slots" id="slots">${[...ans].map((ch, i) => ch === ' ' ? '<span class="slot space"></span>' : /[A-Z]/.test(ch) ? `<span class="slot" data-i="${i}"></span>` : `<span class="slot" style="border:0">${ch}</span>`).join('')}</div>
           <div class="letters" id="letters">${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l => `<button data-l="${l}">${l}</button>`).join('')}</div>
           <div class="feedback" id="fb"></div><div id="nx"></div></div></div>`;
@@ -1961,14 +2096,14 @@ reg({
         if (solved) win(); else if (wrong >= 6) lose();
       }
       function win() {
-        over = true; results[wi] = 'saved';
+        over = true; results[wi] = 'saved'; if (wrong <= 2) flag(v.t, true);
         const fl = Q('#flames'); fl.style.transform = 'scale(1,0)'; fl.style.opacity = 0;
         Q('#eyes').style.opacity = 0; Q('#heyes').style.opacity = 1; Q('#mouth').innerHTML = MOUTHS.win; Q('#sweatG').style.opacity = 0; Q('#brows').style.opacity = 0;
         Q('#sparks').style.opacity = 1; Q('#yolk').classList.remove('hop'); restart(Q('#yolk'), 'cheer'); confetti(50);
         end(true);
       }
       function lose() {
-        over = true; results[wi] = 'fried';
+        over = true; results[wi] = 'fried'; flag(v.t, false);
         [...ans].forEach((ch, i) => { const s = $(`.slot[data-i="${i}"]`, arena); if (s && !s.textContent) { s.textContent = ch; s.classList.add('flip-in', 'lost'); } });
         end(false);
       }
@@ -1983,6 +2118,7 @@ reg({
       $$('#letters button', arena).forEach(b => b.onclick = () => guess(b.dataset.l));
       document.onkeydown = e => { if (/^[a-z]$/i.test(e.key) && !e.ctrlKey && !e.metaKey) guess(e.key.toUpperCase()); };
       onLeave(() => document.onkeydown = null);
+      if (ez) { $$('.ez-word', arena).forEach((e, i) => { const k = words.findIndex(w => w.t === e.dataset.w); if (results[k]) e.classList.add('used'); }); guess(ans[0]); } // Focus mode: first letter is free
     }
     play();
   }
@@ -2033,15 +2169,16 @@ function buildCrossword(list) {
 reg({
   id: 'crossword', level: 1, icon: 'crossword', title: 'Crossword', blurb: 'A fresh crossword of the core terms every time.',
   how: 'Tap a square or a clue, then type. Tap the same square again to switch between Across and Down. Finished words light up on their own. Press "Show mistakes" if you get stuck.',
+  howEasy: 'A small puzzle with six words. Tap a clue, then type the answer. Every answer is in the word bank. Press "Show mistakes" if you get stuck.',
   run(arena, g) {
-    const L = buildCrossword(shuffle(VOCAB.filter(v => v.x.length <= 13)).slice(0, 11).map(v => [v.x, v.c]));
+    const ez = easy(), L = buildCrossword(shuffle(ez ? easyVocab(true) : VOCAB.filter(v => v.x.length <= 13)).slice(0, ez ? 6 : 11).map(v => [v.x, ez ? EASY[v.x] : v.c]));
     const grid = Array.from({ length: L.rows }, () => Array(L.cols).fill(null));
     L.placed.forEach((p, pi) => { for (let i = 0; i < p.w.length; i++) { const r = p.r + (p.dir === 'D' ? i : 0), c = p.c + (p.dir === 'A' ? i : 0); grid[r][c] = grid[r][c] || { ch: p.w[i], words: [] }; grid[r][c].words.push(pi); } });
     let cur = { r: L.placed[0].r, c: L.placed[0].c, dir: L.placed[0].dir }; const revealed = new Set(), solvedSet = new Set(); let finished = false;
     const nums = {}; L.placed.forEach(p => nums[p.r + ',' + p.c] = p.num);
     arena.innerHTML = `<div class="xprog" aria-hidden="true"><i id="xp" style="width:0%"></i></div>
       <div class="xw"><div class="xgrid-wrap"><div class="xgrid" style="grid-template-columns:repeat(${L.cols},auto)">${grid.map((row, r) => row.map((cell, c) => cell ? `<div class="xc on" data-r="${r}" data-c="${c}" style="--d:${(r + c) * 28}ms">${nums[r + ',' + c] ? `<sup>${nums[r + ',' + c]}</sup>` : ''}<input maxlength="1" aria-label="row ${r + 1} column ${c + 1}" autocomplete="off" autocapitalize="characters"></div>` : '<div class="xc"></div>').join('')).join('')}</div></div>
-      <div class="clues"><div class="panel" id="curClue" style="margin-bottom:10px;font-weight:700;min-height:3em"></div><h3>Across</h3><ol id="ca"></ol><h3>Down</h3><ol id="cd"></ol></div></div>
+      <div class="clues"><div class="panel" id="curClue" style="margin-bottom:10px;font-weight:700;min-height:3em"></div><h3>Across</h3><ol id="ca"></ol><h3>Down</h3><ol id="cd"></ol>${ez ? ezBank(L.placed.map(p => p.w)) : ''}</div></div>
       <div class="feedback" id="fb"></div><div class="row"><button class="btn ghost" id="chk">Show mistakes</button><button class="btn ghost" id="rev">Reveal this word</button><button class="btn ghost" id="new">New puzzle</button></div>`;
     const clueLi = (p, i) => `<li data-p="${i}"><b>${p.num}.</b> ${p.clue} <span class="muted">(${p.w.length})</span></li>`;
     $('#ca', arena).innerHTML = L.placed.map((p, i) => p.dir === 'A' ? clueLi(p, i) : '').join('');
@@ -2079,7 +2216,7 @@ reg({
     function checkSolved() {
       L.placed.forEach((p, i) => {
         if (solvedSet.has(i) || !wordOk(p)) return;
-        solvedSet.add(i);
+        solvedSet.add(i); flag(p.w, !revealed.has(i)); $(`.ez-word[data-w="${p.w}"]`, arena)?.classList.add('used');
         cellsOf(p).forEach((c, k) => { c.style.setProperty('--w', k * 60 + 'ms'); restart(c, 'wave'); setTimeout(() => c.classList.add('solved'), 300 + k * 60); });
         const li = $(`.clues li[data-p="${i}"]`, arena); li.classList.add('solved'); li.insertAdjacentHTML('afterbegin', checkSVG);
         $('#fb', arena).className = 'feedback ok'; $('#fb', arena).textContent = `${p.w}! ${solvedSet.size} of ${L.placed.length} solved.`;
@@ -2107,18 +2244,25 @@ const ACRO_KEYS = [
   ['MUSTANGS', 'Every cell in a Mustang is making proteins right now.'],
   ['GENES', 'DNA recipes, each coding for one protein.']
 ];
+const ACRO_EASY = [ // Focus mode: short hidden words that the must-know terms can spell
+  ['CELL', 'Every cell in your body is making proteins right now.'],
+  ['CODE', 'DNA is a code. Cells read it to build proteins.'],
+  ['MEAL', 'In the cookbook analogy, the protein is the finished meal.'],
+  ['BUILD', 'Ribosomes build proteins out of amino acids.']
+];
 reg({
   id: 'acrostic', level: 1, icon: 'acrostic', title: 'Acrostic Puzzle', blurb: 'Solve each row to launch a letter into the hidden word.',
   how: 'Each row is a core vocab term. Fill it in from its clue. When a row is right, its gold letter launches into the hidden word at the top.',
+  howEasy: 'Read the clue for each row and type the word. Every answer is in the word bank. Each row you finish adds a letter to the hidden word.',
   run(arena, g) {
-    let rows, kw, msg;
+    let rows, kw, msg; const ez = easy(), pool = ez ? easyVocab(true) : VOCAB;
     for (let tries = 0; tries < 30; tries++) {
-      [kw, msg] = pick(ACRO_KEYS); rows = []; const used = new Set(); let ok = true;
+      [kw, msg] = pick(ez ? ACRO_EASY : ACRO_KEYS); rows = []; const used = new Set(); let ok = true;
       for (const Lt of kw) {
-        const cands = shuffle(VOCAB.filter(v => v.x.includes(Lt) && !used.has(v.x) && !kw.includes(v.x) && !v.x.includes(kw) && v.x.length <= 13));
+        const cands = shuffle(pool.filter(v => v.x.includes(Lt) && !used.has(v.x) && !kw.includes(v.x) && !v.x.includes(kw) && v.x.length <= 13));
         if (!cands.length) { ok = false; break; }
         const v = cands[0]; used.add(v.x); const idxs = [...v.x].map((c, i) => c === Lt ? i : -1).filter(i => i >= 0);
-        rows.push({ w: v.x, clue: v.c, k: pick(idxs) });
+        rows.push({ w: v.x, clue: ez ? EASY[v.x] : v.c, k: pick(idxs) });
       }
       if (ok) break;
     }
@@ -2126,7 +2270,7 @@ reg({
     arena.innerHTML = `<p class="muted" style="margin:0;text-align:center;font-size:.8rem;font-weight:700;letter-spacing:.1em">HIDDEN WORD</p><div class="banner" id="ban">${[...kw].map(() => '<span></span>').join('')}</div>
       <div class="clue-card" id="focusClue" style="margin-bottom:12px"><span class="tag">Row 1</span><span>${rows[0].clue}</span></div>
       <div class="acro" id="ac">${rows.map((r, ri) => `<div class="arow" data-r="${ri}" style="--d:${ri * 70}ms">${'<span class="acell"></span>'.repeat(maxK - r.k)}${[...r.w].map((_, i) => `<span class="acell ${i === r.k ? 'key' : ''}" style="--w:${i * 40}ms"><input maxlength="1" data-r="${ri}" data-i="${i}" aria-label="Row ${ri + 1} letter ${i + 1}" autocomplete="off"></span>`).join('')}<span class="aclue">${ri + 1}. ${r.clue} <span class="muted">(${r.w.length})</span></span></div>`).join('')}</div>
-      <div class="feedback" id="fb"></div><div class="row"><button class="btn ghost" id="hint">Reveal a letter</button><button class="btn ghost" id="new">New puzzle</button></div>`;
+      ${ez ? ezBank(rows.map(r => r.w)) : ''}<div class="feedback" id="fb"></div><div class="row"><button class="btn ghost" id="hint">Reveal a letter</button><button class="btn ghost" id="new">New puzzle</button></div>`;
     const ac = $('#ac', arena), fb = $('#fb', arena); let focusRow = 0;
     const rowInputs = ri => $$(`input[data-r="${ri}"]`, ac);
     ac.addEventListener('focusin', e => { const t = e.target.closest('input'); if (!t) return; focusRow = +t.dataset.r; $$('.arow', ac).forEach(r => r.classList.toggle('focus', +r.dataset.r === focusRow)); $('#focusClue', arena).innerHTML = `<span class="tag">Row ${focusRow + 1}</span><span>${rows[focusRow].clue}</span>`; });
@@ -2134,7 +2278,7 @@ reg({
       const ins = rowInputs(ri), r = rows[ri]; if (ins.some(i => !i.value)) return;
       const row = ins[0].closest('.arow'); if (row.classList.contains('locked')) return;
       if (ins.map(i => i.value).join('') === r.w) {
-        row.classList.add('locked'); ins.forEach(i => i.readOnly = true); solvedRows++;
+        row.classList.add('locked'); ins.forEach(i => i.readOnly = true); solvedRows++; flag(r.w, !r.helped); $(`.ez-word[data-w="${r.w}"]`, arena)?.classList.add('used');
         const keyCell = ins[r.k], slot = $$('#ban span', arena)[ri];
         const a = keyCell.getBoundingClientRect(), b = slot.getBoundingClientRect();
         const fly = document.createElement('div'); fly.className = 'flyer'; fly.textContent = r.w[r.k]; fly.style.left = a.left + 'px'; fly.style.top = a.top + 'px'; document.body.appendChild(fly);
@@ -2144,6 +2288,7 @@ reg({
         fb.className = 'feedback ok'; fb.textContent = `${r.w} locked in!`;
         const next = rows.findIndex((_, i) => !rowInputs(i)[0].closest('.arow').classList.contains('locked')); if (next >= 0) rowInputs(next).find(i => !i.value)?.focus() || rowInputs(next)[0].focus();
       } else {
+        if (!r.helped) { r.helped = true; flag(r.w, false); }
         restart(row, 'bad'); ins.forEach((inp, i) => { if (inp.value !== r.w[i]) { inp.parentElement.classList.add('no'); setTimeout(() => inp.parentElement.classList.remove('no'), 1400); } });
         fb.className = 'feedback no'; fb.textContent = 'Not quite. The red letters need another look.';
       }
@@ -2155,7 +2300,7 @@ reg({
     }
     ac.addEventListener('input', e => { const t = e.target; if (t.readOnly) return; t.value = t.value.replace(/[^a-z]/gi, '').slice(-1).toUpperCase(); t.parentElement.classList.remove('no'); if (t.value) { restart(t.parentElement, 'pop'); const nx = $(`input[data-r="${t.dataset.r}"][data-i="${+t.dataset.i + 1}"]`, ac); if (nx) nx.focus(); checkRow(+t.dataset.r); } });
     ac.addEventListener('keydown', e => { const t = e.target; if (e.key === 'Backspace' && !t.value) $(`input[data-r="${t.dataset.r}"][data-i="${+t.dataset.i - 1}"]`, ac)?.focus(); if (e.key === 'ArrowDown' || e.key === 'Enter') $(`input[data-r="${+t.dataset.r + 1}"]`, ac)?.focus(); if (e.key === 'ArrowUp') $(`input[data-r="${+t.dataset.r - 1}"]`, ac)?.focus(); });
-    $('#hint', arena).onclick = () => { const ins = rowInputs(focusRow); if (ins[0].readOnly) return; const r = rows[focusRow]; const i = ins.findIndex((inp, k) => inp.value !== r.w[k]); if (i < 0) return; ins[i].value = r.w[i]; restart(ins[i].parentElement, 'pop'); hints++; checkRow(focusRow); };
+    $('#hint', arena).onclick = () => { const ins = rowInputs(focusRow); if (ins[0].readOnly) return; const r = rows[focusRow]; const i = ins.findIndex((inp, k) => inp.value !== r.w[k]); if (i < 0) return; ins[i].value = r.w[i]; restart(ins[i].parentElement, 'pop'); hints++; if (!r.helped) { r.helped = true; flag(r.w, false); } checkRow(focusRow); };
     $('#new', arena).onclick = () => g.run(arena, g);
     setTimeout(() => rowInputs(0)[0].focus({ preventScroll: true }), 600);
   }
@@ -2215,29 +2360,33 @@ function animateProteinScene(box, kind) {
   })(t0);
   return () => { stopped = true; cancelAnimationFrame(raf); };
 }
+/* s = the sentence, with at most FOUR {blanks}. The word bank holds only the words that fill the blanks (no decoys).
+   e = the Focus mode version: shorter sentences and two blanks. */
 const DEFS = [
-  { s: '{Transcription} copies a {gene} from {DNA} into {mRNA} inside the {nucleus}.', x: ['Translation', 'protein', 'cytoplasm'], scene: 'tx', tag: 'Transcription' },
-  { s: '{Translation} happens when {ribosomes} read mRNA {codons} and link {amino acids} into a {polypeptide} in the {cytoplasm}.', x: ['Transcription', 'nucleus', 'nucleotides'], scene: 'tl', tag: 'Translation' },
-  { s: 'The {central dogma} describes how genetic information flows: DNA → {RNA} → {protein}.', x: ['lipid', 'enzyme', 'carbohydrate'], scene: 'dogma', tag: 'Central dogma' },
-  { s: 'In the cookbook analogy, {DNA} is the cookbook, a {gene} is one recipe, the {ribosome} is the chef, and the {protein} is the finished meal.', x: ['tRNA', 'nucleus', 'amino acid'], scene: 'cook', tag: 'The cookbook analogy' },
-  { s: '{mRNA} carries the recipe, {tRNA} delivers the matching amino acid, and {rRNA} makes up the ribosome.', x: ['DNA', 'RNA polymerase'], scene: 'rna', tag: 'Three kinds of RNA' },
-  { s: 'A {codon} is three mRNA bases, and a tRNA {anticodon} pairs with it. Translation begins at the start codon {AUG} and ends at a {stop} codon.', x: ['gene', 'UUU', 'peptide'], scene: 'codon', tag: 'Codons' },
-  { s: '{Primary} structure is the amino acid sequence. {Hydrogen} bonds form helices and sheets ({secondary}). The chain folds into a 3-D {tertiary} shape, and two or more chains join in {quaternary} structure.', x: ['Peptide', 'ionic'], scene: 'levels', tag: 'Levels of protein structure' },
-  { s: 'A protein\'s amino acid {sequence} determines how it {folds}. Its {shape} determines its {function}, and {denaturation} by heat destroys that shape.', x: ['color', 'size', 'translation'], scene: 'denature', tag: 'Shape and function' }
+  { s: '{Transcription} copies a {gene} from DNA into {mRNA} inside the {nucleus}.', e: '{Transcription} copies a gene from DNA into {mRNA}. It happens inside the nucleus.', scene: 'tx', tag: 'Transcription' },
+  { s: '{Translation} happens when {ribosomes} read mRNA codons and link {amino acids} into a polypeptide in the {cytoplasm}.', e: 'In {translation}, a {ribosome} reads the mRNA and links amino acids into a chain.', scene: 'tl', tag: 'Translation' },
+  { s: 'The {central dogma} describes how genetic information flows: DNA → {RNA} → {protein}.', e: 'Genetic information flows one way: DNA → {RNA} → {protein}.', scene: 'dogma', tag: 'Central dogma' },
+  { s: 'In the cookbook analogy, {DNA} is the cookbook, a {gene} is one recipe, the {ribosome} is the chef, and the {protein} is the finished meal.', e: 'Think of a kitchen. {DNA} is the cookbook. A gene is one recipe. The {ribosome} is the chef. The protein is the meal.', scene: 'cook', tag: 'The cookbook analogy' },
+  { s: '{mRNA} carries the recipe, {tRNA} delivers the matching amino acid, and {rRNA} makes up the ribosome.', e: '{mRNA} carries the recipe. {tRNA} delivers the amino acids.', scene: 'rna', tag: 'Three kinds of RNA' },
+  { s: 'A {codon} is three mRNA bases, and a tRNA {anticodon} pairs with it. Translation begins at the start codon {AUG} and ends at a {stop} codon.', e: 'A {codon} is three mRNA bases. Translation begins at the {start} codon (AUG) and ends at a stop codon.', scene: 'codon', tag: 'Codons' },
+  { s: '{Primary} structure is the amino acid sequence. Hydrogen bonds form helices and sheets ({secondary}). The chain folds into a 3-D {tertiary} shape, and two or more chains join in {quaternary} structure.', e: '{Primary} structure (1°) is the order of the amino acids. {Secondary} structure (2°) is a coil or a folded sheet.', scene: 'levels', tag: 'Levels of protein structure' },
+  { s: 'A protein\'s amino acid {sequence} determines how it folds. Its {shape} determines its {function}, and {denaturation} by heat destroys that shape.', e: 'The {shape} of a protein decides its job. Heat can wreck that shape. This is called {denaturation}.', scene: 'denature', tag: 'Shape and function' }
 ];
 reg({
   id: 'define', level: 1, icon: 'define', title: 'Define It', blurb: 'Complete each definition and watch it come to life.',
-  how: 'Drag the word chips into the blanks (or tap a chip, then tap a blank). Some chips are decoys. The moment every word is in the right spot, the picture comes to life.',
+  how: 'Drag the word chips into the blanks (or tap a chip, then tap a blank). Every chip gets used. The moment every word is in the right spot, the picture comes to life.',
+  howEasy: 'Each sentence has two blanks and two word chips. Drag each chip into a blank (or tap a chip, then tap a blank). When both are right, the picture comes to life.',
   run(arena, g) {
-    let di = 0, firstTry = 0, stopScene = () => { }; onLeave(() => stopScene());
+    const ez = easy(); let di = 0, firstTry = 0, stopScene = () => { }; onLeave(() => stopScene());
     function play() {
       stopScene();
       const D = DEFS[di]; const answers = []; let tries = 0;
-      const html = D.s.replace(/\{([^}]+)\}/g, (_, w) => { answers.push(w); return `<span class="bk" data-drop="b${answers.length - 1}" style="display:inline-flex;min-width:96px;min-height:38px;border-bottom:3px solid var(--carolina);vertical-align:middle;margin:2px 4px;align-items:center;justify-content:center"></span>`; });
+      const missed = new Set();
+      const html = (ez && D.e || D.s).replace(/\{([^}]+)\}/g, (_, w) => { answers.push(w); return `<span class="bk" data-drop="b${answers.length - 1}" style="display:inline-flex;min-width:96px;min-height:38px;border-bottom:3px solid var(--carolina);vertical-align:middle;margin:2px 4px;align-items:center;justify-content:center"></span>`; });
       arena.innerHTML = `<div class="status"><div class="sdots">${DEFS.map((_, i) => `<i class="${i < di ? 'on' : i === di ? 'cur' : ''}"></i>`).join('')}</div><div class="stat"><span>Sentence</span>${di + 1} / ${DEFS.length}</div></div>
         <div class="scene" id="scene"><span class="tagline">${D.tag}</span>${SCENES[D.scene]()}</div>
         <p style="font-size:1.18rem;line-height:2.25;max-width:820px;margin:14px 0">${html}</p>
-        <div class="bank" data-drop="bank">${shuffle([...answers, ...D.x]).map(w => `<span class="chip" data-drag data-w="${esc(w)}">${esc(w)}</span>`).join('')}</div>
+        <div class="bank" data-drop="bank">${shuffle(answers).map(w => `<span class="chip" data-drag data-w="${esc(w)}">${esc(w)}</span>`).join('')}</div>
         <div class="feedback" id="fb"></div><div class="row"><button class="btn ghost" id="chk">Show wrong words</button></div>`;
       const sceneBox = $('#scene', arena); sceneBox.style.maxWidth = '640px';
       if (D.scene === 'levels' || D.scene === 'denature') sceneBox.querySelector('.pg').innerHTML = proteinSVG(D.scene === 'levels' ? 0 : 2, 20);
@@ -2250,6 +2399,7 @@ reg({
       function success() {
         solved = true;
         if (misses === 0) firstTry++;
+        answers.forEach((w, i) => { if (!missed.has(i)) flag(w, true); });
         $$('.chip', arena).forEach(c => c.removeAttribute('data-drag'));
         bks().forEach((b, i) => setTimeout(() => { b.classList.add('ok-glow'); const c = b.querySelector('.chip'); c.classList.add('ok'); restart(c, 'pop'); }, i * 110));
         $$('.bank .chip', arena).forEach(c => { c.style.transition = 'opacity .4s'; c.style.opacity = '.25'; });
@@ -2267,7 +2417,9 @@ reg({
         if (!allFilled()) return;
         if (allRight()) return setTimeout(success, 380);
         const arr = arrangement(); if (arr !== lastWrong) { misses++; lastWrong = arr; }
+        bks().forEach((b, i) => { if (b.querySelector('.chip').dataset.w !== answers[i] && !missed.has(i)) { missed.add(i); flag(answers[i], false); } });
         $('#fb', arena).className = 'feedback no'; $('#fb', arena).textContent = 'Not quite yet. Swap some words, or press "Show wrong words" for a hint.';
+        if (ez) $('#chk', arena).onclick(); // Focus mode marks the wrong words right away
       });
       $('#chk', arena).onclick = () => {
         if (solved) return;
@@ -2640,8 +2792,9 @@ async function translationFinale(svgEl, cap, token, replay) {
 reg({
   id: 'transcribe', level: 2, icon: 'transcribe', title: 'Label: Transcription', blurb: 'Label transcription inside the nucleus, then watch it happen.',
   how: 'We are zoomed in inside the nucleus. First, watch transcription begin. Then drag the seven labels onto the frozen picture. The moment they are all right, you will watch transcription finish, all the way to the mRNA leaving the nucleus.',
+  howEasy: 'First, watch transcription begin. Then drag the four labels onto the picture. Three labels are already done for you. When yours are right, you will watch transcription finish.',
   run(arena, g) {
-    const sc = txFrame(TX_STATIC), mt = sc.pos.tail;
+    const sc = txFrame(TX_STATIC), mt = sc.pos.tail, ez = easy();
     const svg = `<svg viewBox="0 0 900 560" role="img" aria-label="Transcription inside the nucleus">${floatCSS}<g id="bg">${txBG()}</g><g id="scene">${sc.s}</g><g id="leaders"></g></svg>`;
     const ink = 'style="fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"';
     const [fx, fy] = TX_HOMES[TX_LABELED], pa = -62 * Math.PI / 180;
@@ -2650,13 +2803,13 @@ reg({
       { id: 'pol', label: 'RNA polymerase', x: 640, y: 120, px: TX_STATIC.pol.x + 140 * Math.cos(pa), py: TX_STATIC.pol.y + 130 * Math.sin(pa) },
       // mRNA: touch the backbone between the last two bases (not on a letter)
       { id: 'mrna', label: 'mRNA', x: 300, y: 36, px: (mt[mt.length - 1][0] + mt[mt.length - 2][0]) / 2, py: (mt[mt.length - 1][1] + mt[mt.length - 2][1]) / 2 },
-      { id: 'pore', label: 'Nuclear pore', x: 836, y: 36, px: TX_EXIT[0], py: TX_EXIT[1] },
+      { id: 'pore', label: 'Nuclear pore', x: 836, y: 36, px: TX_EXIT[0], py: TX_EXIT[1], given: ez },
       // DNA double helix: a bracket hugging BOTH strands at the end of the DNA; the leader touches the bracket
       { id: 'dna', label: 'DNA double helix', x: 92, y: 532, px: 61, py: 310, mark: `<path d="M70 ${TX_YT - 13} L61 ${TX_YT - 13} L61 ${TX_YB + 13} L70 ${TX_YB + 13}" ${ink}/>` },
       { id: 'nucleus', label: 'Nucleus', x: 305, y: 532, px: 335, py: 455 },
-      { id: 'tmp', label: 'Template strand', x: 475, y: 532, px: 441, py: 397 },   // between two bases so no letter is covered
+      { id: 'tmp', label: 'Template strand', x: 475, y: 532, px: 441, py: 397, given: ez },   // between two bases so no letter is covered
       // Free RNA nucleotide: an outline box around one whole nucleotide (which holds still); the leader touches the box
-      { id: 'nuc', label: 'Free RNA nucleotide', x: 660, y: 532, px: fx - 5, py: fy + 18, mark: `<rect x="${fx - 29}" y="${fy - 18}" width="48" height="36" rx="9" ${ink}/>` }
+      { id: 'nuc', label: 'Free RNA nucleotide', x: 660, y: 532, px: fx - 5, py: fy + 18, given: ez, mark: `<rect x="${fx - 29}" y="${fy - 18}" width="48" height="36" rx="9" ${ink}/>` }
     ];
     const wrap = document.createElement('div'); wrap.style.overflowX = 'auto'; arena.appendChild(wrap);
     labelDiagram(wrap, {
@@ -2671,19 +2824,21 @@ reg({
 reg({
   id: 'translate', level: 2, icon: 'translate', title: 'Label: Translation', blurb: 'Label a ribosome at work, then watch it build a protein.',
   how: 'First, watch translation begin. Then drag the nine labels onto the frozen picture. The moment they are all right, you will watch translation finish, all the way to a folded protein.',
+  howEasy: 'First, watch translation begin. Then drag the four labels onto the picture. Five labels are already done for you. When yours are right, you will watch translation finish.',
   run(arena, g) {
+    const ez = easy();
     const svg = `<svg viewBox="0 0 900 460" role="img" aria-label="Translation diagram"><g id="scene">${riboScene(RB_STATIC)}</g><g id="leaders"></g></svg>`;
     const cb = chainBracketGeom(RB_STATIC.chain.from, RB_STATIC.chain.aas).mid;
     const zones = [
-      { id: 'large', label: 'Ribosome (large subunit)', x: 140, y: 300, px: 272, py: 300 },
-      { id: 'small', label: 'Ribosome (small subunit)', x: 300, y: 432, px: 330, py: 390 },
+      { id: 'large', label: 'Ribosome (large subunit)', x: 140, y: 300, px: 272, py: 300, given: ez },
+      { id: 'small', label: 'Ribosome (small subunit)', x: 300, y: 432, px: 330, py: 390, given: ez },
       { id: 'mrna', label: 'mRNA', x: 800, y: 432, px: 852, py: 350 },
       { id: 'codon', label: 'Codon', x: 580, y: 432, px: cx0(7) + 39, py: 370 },
       { id: 'trna', label: 'tRNA', x: 830, y: 150, px: 734, py: 116 },
-      { id: 'anti', label: 'Anticodon', x: 830, y: 250, px: 726, py: 177 },   // middle of the bracket under the three bases
+      { id: 'anti', label: 'Anticodon', x: 830, y: 250, px: 726, py: 177, given: ez },   // middle of the bracket under the three bases
       { id: 'aa', label: 'Amino acid', x: 835, y: 62, px: 745, py: 68 },   // touches the right edge of the Pro bead
-      { id: 'bond', label: 'Peptide bond', x: 545, y: 36, px: SITE.P + 39, py: 215 },   // rests on top of the bond instead of covering it
-      { id: 'chain', label: 'Polypeptide chain', x: 360, y: 40, px: cb[0], py: cb[1] }   // straight down onto the bracket: never along it, never across the Met bead
+      { id: 'bond', label: 'Peptide bond', x: 545, y: 36, px: SITE.P + 39, py: 215, given: ez },   // rests on top of the bond instead of covering it
+      { id: 'chain', label: 'Polypeptide chain', x: 360, y: 40, px: cb[0], py: cb[1], given: ez }   // straight down onto the bracket: never along it, never across the Met bead
     ];
     const wrap = document.createElement('div'); wrap.style.overflowX = 'auto'; arena.appendChild(wrap);
     labelDiagram(wrap, {
@@ -2759,6 +2914,15 @@ const PIN_PROMPTS = [
   ['nucleus', 'Pin the place where the DNA "cookbook" is kept.'],
   ['cytoplasm', 'Pin the region of the cell where translation takes place (not an organelle).']
 ];
+const PIN_EASY = [ // Focus mode: five prompts that name the part and say what it does
+  ['nucleus', 'Tap the nucleus. That is where the DNA is kept.'],
+  ['mrna', 'Tap the mRNA. It is the message leaving the nucleus.'],
+  ['ribosome', 'Tap the ribosome that is building a chain of beads.'],
+  ['chain', 'Tap the new protein chain. It looks like a string of beads.'],
+  ['trna', 'Tap a tRNA. Each one carries a single bead (an amino acid).'],
+  ['cytoplasm', 'Tap the cytoplasm. It is the open space outside the nucleus.']
+];
+const PIN_NOTE = { transcription: 'Transcription', mrna: 'mRNA', ribosome: 'Ribosome', chain: 'Polypeptide', trna: 'tRNA', aa: 'Amino acid', nucleus: 'Nucleus', cytoplasm: 'Cytoplasm' };
 const tailPin = (x, y, s, faded) => `<g class="pin-drop" style="opacity:${faded ? .45 : 1};filter:drop-shadow(0 0 1.5px #FFFFFF)"><g transform="translate(${x} ${y}) scale(${s}) translate(${-TAIL_ANCHOR[0]} ${-TAIL_ANCHOR[1]})">${mustangUse('clip-path="url(#mustangTail)"')}</g><circle cx="${x}" cy="${y}" r="${Math.max(4, 12 * s)}" style="fill:var(--bad);stroke:#FFFFFF;stroke-width:1.5"/></g>`;
 const PIN_EYE = `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12z" style="fill:none;stroke:currentColor;stroke-width:2"/><circle cx="12" cy="12" r="3.2" style="fill:currentColor"/></svg>`;
 const PIN_DROP = `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round"/></svg>`;
@@ -2768,6 +2932,7 @@ const PIN_MASK = `<svg viewBox="0 0 120 50" width="150" height="62" aria-hidden=
 reg({
   id: 'pin', level: 2, icon: 'pin', title: 'Pin the Tail on the Mustang', blurb: 'Zoom into one of Marty\'s cells and pin the parts of protein synthesis.',
   how: 'Warm-up: study Marty, then pin his tail with the blindfold on. Then we zoom into one of his cells. Read each prompt and tap the exact spot. Bullseye = 2 points, close = 1 point.',
+  howEasy: 'Warm-up: pin the tail on Marty. Then we zoom into one of his cells. Read each prompt and tap that part of the cell. Five prompts in all.',
   run(arena, g) {
     arena.innerHTML = `<div class="row" style="justify-content:space-between;align-items:stretch;gap:10px;margin-bottom:10px"><div class="pin-prompt" id="pp" style="flex:1;margin:0"><span class="n">${PIN_EYE}</span><span>Warm-up: Pin the Tail on Marty</span></div><div class="stat" id="sc" style="display:grid;place-items:center"><span>Points</span>0</div></div>
       <div class="pin-stage field" id="stage" style="aspect-ratio:800/520">
@@ -2799,7 +2964,7 @@ reg({
       say(2); bf.classList.add('on'); await wait(800); if (skipped || !stage.isConnected) return; hideMarty(); await wait(1300); if (skipped || !stage.isConnected) return;
       readyToPin();
     })();
-    const prompts = shuffle(PIN_PROMPTS).filter((p, i, a) => a.findIndex(q => q[0] === p[0]) === i).slice(0, 8);
+    const ez = easy(), prompts = ez ? shuffle(PIN_EASY).slice(0, 5) : shuffle(PIN_PROMPTS).filter((p, i, a) => a.findIndex(q => q[0] === p[0]) === i).slice(0, 8);
     const toSvg = (svg, e) => { const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
     stage.addEventListener('click', async e => {
       if (locked) return;
@@ -2824,8 +2989,8 @@ reg({
       }
       if (phase !== 'cell') return;
       const p = toSvg(cell, e); const [key] = prompts[qi]; const T = PIN_TARGETS[key];
-      const d = T.test(p.x, p.y); const pts = d <= T.r ? 2 : d <= T.r * 2.2 + 8 ? 1 : 0;
-      points += pts; locked = true;
+      const R = T.r * (ez ? 1.6 : 1), d = T.test(p.x, p.y); const pts = d <= R ? 2 : d <= R * 2.2 + 8 ? 1 : 0; // Focus mode: bigger targets
+      points += pts; locked = true; if (pts !== 1 && PIN_NOTE[key]) flag(PIN_NOTE[key], pts === 2);
       $('#marks', cell).insertAdjacentHTML('beforeend', tailPin(p.x, p.y, .32, !pts));
       if (pts < 2) $('#marks', cell).insertAdjacentHTML('beforeend', `<circle cx="${T.at[0]}" cy="${T.at[1]}" r="18" style="fill:none;stroke:var(--good);stroke-width:4"><animate attributeName="r" values="12;24;12" dur="1s" repeatCount="indefinite"/></circle>`);
       fb.className = 'feedback ' + (pts ? 'ok' : 'no');
@@ -2836,7 +3001,7 @@ reg({
         qi++; $('#nx', arena).innerHTML = ''; fb.textContent = '';
         $$('#marks circle[r]', cell).forEach(c => { if (c.querySelector('animate')) c.remove(); });
         if (qi < prompts.length) { locked = false; ask(); }
-        else finishPanel(arena, g, points, prompts.length * 2, 'Points out of 16. Every tail you pinned stays stuck in the cell until the round ends.', () => g.run(arena, g));
+        else finishPanel(arena, g, points, prompts.length * 2, `Points out of ${prompts.length * 2}. Every tail you pinned stays stuck in the cell until the round ends.`, () => g.run(arena, g));
       };
     });
     function ask() { pp.innerHTML = `<span class="n">${qi + 1}</span><span>${prompts[qi][1]}</span>`; }
@@ -2851,23 +3016,28 @@ const SORTS = [
   ['Takes place in the cytoplasm', 'tl'], ['Ribosomes read codons', 'tl'], ['tRNA delivers amino acids', 'tl'], ['Produces a polypeptide', 'tl'], ['Peptide bonds form', 'tl'], ['Begins at the start codon AUG', 'tl'], ['Anticodons pair with codons', 'tl'], ['Step 2: the chefs prepare the recipe', 'tl'],
   ['Involves mRNA', 'both'], ['Follows base-pairing rules', 'both'], ['Part of the central dogma', 'both'], ['Needed to make a protein', 'both']
 ];
+const SORTS_EASY = [ // Focus mode: two bins, short facts
+  ['Happens in the nucleus', 'tx'], ['Makes mRNA', 'tx'], ['Copies a gene from DNA', 'tx'], ['Step 1', 'tx'], ['Reads DNA', 'tx'],
+  ['Happens in the cytoplasm', 'tl'], ['Uses a ribosome', 'tl'], ['tRNA brings amino acids', 'tl'], ['Makes a protein chain', 'tl'], ['Step 2', 'tl'], ['Reads mRNA codons', 'tl']
+];
 reg({
   id: 'sort', level: 2, icon: 'sort', title: 'Transcription or Translation?', blurb: 'Sort each fact into the right process.',
   how: 'Drag the card into Transcription, Translation, or Both (or tap the bin). Twelve cards per round.',
+  howEasy: 'Read the card. Does it describe Transcription or Translation? Drag it into that box (or tap the box). Eight cards.',
   run(arena, g) {
-    const deck = shuffle(SORTS).slice(0, 12); let i = 0, right = 0;
-    const NAMES = { tx: 'Transcription', tl: 'Translation', both: 'Both' };
-    arena.innerHTML = `<div class="status"><div class="stat" id="ct"><span>Card</span>1 / 12</div><div class="stat" id="rt"><span>Correct</span>0</div></div>
+    const ez = easy(), deck = shuffle(ez ? SORTS_EASY : SORTS).slice(0, ez ? 8 : 12); let i = 0, right = 0;
+    const NAMES = ez ? { tx: 'Transcription', tl: 'Translation' } : { tx: 'Transcription', tl: 'Translation', both: 'Both' };
+    arena.innerHTML = `<div class="status"><div class="stat" id="ct"><span>Card</span>1 / ${deck.length}</div><div class="stat" id="rt"><span>Correct</span>0</div></div>
       <div class="deck" id="deck"></div><div class="feedback" id="fb" style="text-align:center"></div>
       <div class="bins">${Object.entries(NAMES).map(([k, n]) => `<div class="bin" data-drop="${k}" role="button" tabindex="0"><h4>${n}</h4><div class="muted" style="font-size:.78rem;text-align:center">${k === 'tx' ? 'Nucleus · DNA → mRNA' : k === 'tl' ? 'Cytoplasm · mRNA → polypeptide' : 'True for both'}</div></div>`).join('')}</div>`;
     const deckEl = $('#deck', arena), fb = $('#fb', arena);
     function show() { deckEl.innerHTML = i < deck.length ? `<span class="chip" data-drag>${deck[i][0]}</span>` : ''; }
     function place(bin) {
-      if (i >= deck.length) return; const [txt, ans] = deck[i]; const ok = bin === ans; if (ok) right++;
+      if (i >= deck.length) return; const [txt, ans] = deck[i]; const ok = bin === ans; if (ok) right++; flag('txvstl', ok);
       const b = $(`.bin[data-drop="${bin}"]`, arena); b.insertAdjacentHTML('beforeend', `<span class="chip ${ok ? 'ok' : 'no'}">${txt}</span>`);
       if (!ok) { $(`.bin[data-drop="${ans}"]`, arena).insertAdjacentHTML('beforeend', `<span class="chip ok" style="opacity:.7">${txt}</span>`); b.lastElementChild.remove(); bump(b); }
       fb.className = 'feedback ' + (ok ? 'ok' : 'no'); fb.textContent = ok ? 'Correct!' : `That one belongs in ${NAMES[ans]}.`;
-      i++; $('#ct', arena).innerHTML = `<span>Card</span>${Math.min(i + 1, 12)} / 12`; $('#rt', arena).innerHTML = `<span>Correct</span>${right}`;
+      i++; $('#ct', arena).innerHTML = `<span>Card</span>${Math.min(i + 1, deck.length)} / ${deck.length}`; $('#rt', arena).innerHTML = `<span>Correct</span>${right}`;
       show();
       if (i >= deck.length) setTimeout(() => finishPanel(arena, g, right, deck.length, 'Cards sorted correctly.', () => g.run(arena, g)), 1200);
     }
@@ -2923,7 +3093,7 @@ const GENES = [
 ];
 function makeRandomGene() {
   let lead, code;
-  do { lead = Array.from({ length: 6 + rnd(4) }, () => pick('CGAU')).join(''); code = randGene(6) + pick(['UAA', 'UAG', 'UGA']); } while ((lead + code).indexOf('AUG') !== lead.length);
+  do { lead = Array.from({ length: 6 + rnd(4) }, () => pick('CGAU')).join(''); code = randGene(easy() ? 3 : 6) + pick(['UAA', 'UAG', 'UGA']); } while ((lead + code).indexOf('AUG') !== lead.length);
   return { id: 'rand', name: 'Random practice gene', lead, code, random: true, job: 'You found the stop codon! Translation ends and the ribosome releases the polypeptide so it can fold.' };
 }
 function tRNAMini(aa, anti, o = {}) { // tRNA: amino acid on top, anticodon tiles (same look as codon tiles) on the bottom
@@ -2940,12 +3110,14 @@ const upArrow = `<svg viewBox="0 0 40 40" width="40" height="40" class="bob"><pa
 reg({
   id: 'builder', level: 3, icon: 'builder', title: 'Codon Wheel Protein Builder', blurb: 'Read the codon wheel and drag tRNAs to build a real protein.',
   how: 'Pick a gene. First tap the start codon (AUG) on the mRNA strand. Then read each codon on the wheel from the center out, grab the amino acid from the outer ring, and drag its tRNA up onto the codon.',
+  howEasy: 'Pick a gene. 1: Tap AUG (the start) on the mRNA. 2: Read each codon on the wheel, starting in the center. 3: Drag the amino acid from the outside ring up to the codon. If you miss, the wheel shows you how.',
   run(arena, g) {
-    arena.innerHTML = `<p style="margin-top:0;font-weight:700">Choose a gene to translate:</p><div class="cards" id="gl">${GENES.map((gn, i) => `<button class="card" data-i="${i}"><span class="ic">${icon(i === 3 ? 'dash' : 'builder')}</span><span><h3>${gn.name}</h3><p>${gn.random ? 'New sequence every time' : gn.real ? `First ${gn.code.length / 3} codons of the real human gene` : 'Sample sequence'}</p></span></button>`).join('')}</div>`;
-    $$('#gl .card', arena).forEach(b => b.onclick = () => build(GENES[+b.dataset.i].random ? makeRandomGene() : GENES[+b.dataset.i]));
+    const ez = easy(), trim = G => ez && !G.random ? { ...G, code: G.code.slice(0, 15) } : G; // Focus mode: five codons instead of nine
+    arena.innerHTML = `<p style="margin-top:0;font-weight:700">Choose a gene to translate:</p><div class="cards" id="gl">${GENES.map((gn, i) => `<button class="card" data-i="${i}"><span class="ic">${icon(i === 3 ? 'dash' : 'builder')}</span><span><h3>${gn.name}</h3><p>${gn.random ? 'New sequence every time' : gn.real ? `First ${trim(gn).code.length / 3} codons of the real human gene` : 'Sample sequence'}</p></span></button>`).join('')}</div>`;
+    $$('#gl .card', arena).forEach(b => b.onclick = () => build(GENES[+b.dataset.i].random ? makeRandomGene() : trim(GENES[+b.dataset.i])));
     function build(G, opt = {}) {
       const mrna = G.lead + G.code, L = G.lead.length, codons = G.code.match(/.../g), mutant = opt.mutant;
-      let phase = opt.startAt != null ? 'codon' : 'start', ci = opt.startAt || 0, mistakes = 0, clean = 0, codonErr = false, busy = false, selected = null;
+      let phase = opt.startAt != null ? 'codon' : 'start', ci = opt.startAt || 0, mistakes = 0, clean = 0, codonErr = false, busy = false, selected = null, startErr = false;
       const chain = opt.chain ? [...opt.chain] : [];
       arena.innerHTML = `<div class="row" style="margin-bottom:10px"><button class="btn ghost small" id="back">${chev} Genes</button><b style="font-size:1.05rem">${G.name}</b></div>
         <div class="track-wrap" id="tw"><div class="tk-stage" id="stage"><div class="ribo-layer" id="ribo" hidden><div class="ribo-L"><span></span><span></span><span></span></div><div class="ribo-S"></div></div><div id="tkhost"></div></div></div>
@@ -3006,8 +3178,8 @@ reg({
         $('#hint', arena).disabled = phase !== 'codon';
       }
       function findStart(i, el) {
-        if (i >= L && i <= L + 2) { phase = 'codon'; say('Found it! AUG is the start codon. Everything before it is not translated.', true); drawTrack(); task(); }
-        else { miss(); say(mrna.substr(i, 3) === 'AUG' ? 'That is AUG, but is it the first one?' : `That reads ${mrna.substr(i, 3)}. Look for A-U-G, reading left to right (5′ to 3′).`); bump(el); }
+        if (i >= L && i <= L + 2) { phase = 'codon'; codonErr = false; flag('Start codon', !startErr); say('Found it! AUG is the start codon. Everything before it is not translated.', true); drawTrack(); task(); }
+        else { miss(); startErr = true; say(mrna.substr(i, 3) === 'AUG' ? 'That is AUG, but is it the first one?' : `That reads ${mrna.substr(i, 3)}. Look for A-U-G, reading left to right (5′ to 3′).`); bump(el); }
       }
       lock.onclick = () => { say('Start with the mRNA strand above the wheel: tap the first base of AUG.'); bump($('.strand', host)); };
       // ---- drag a tRNA from the outer ring of the wheel ----
@@ -3053,9 +3225,11 @@ reg({
           miss(); drawTrack();
           const anti = aa === '*' ? null : antiOf(AA2CODONS[aa][0]);
           say(aa === '*' ? `${cur} is not a stop codon, so a release factor cannot bind. Trace ${cur[0]} → ${cur[1]} → ${cur[2]} from the center of the wheel.` : want === '*' ? `${cur} is a STOP codon. No tRNA matches it. Look for STOP on the outer ring.` : `That tRNA's anticodon (${anti}) does not pair with ${cur}. Trace ${cur[0]} → ${cur[1]} → ${cur[2]} from the center of the wheel.`);
-          bump($('.tk-col.cur', host)); return;
+          bump($('.tk-col.cur', host));
+          if (ez) setTimeout(() => { if (phase === 'codon' && !busy) $('#hint', arena)?.click(); }, 1600); // Focus mode: show how to read it
+          return;
         }
-        busy = true; if (!codonErr) clean++; codonErr = false;
+        busy = true; if (!codonErr) clean++; flag(want === '*' ? 'Stop codon' : 'wheel', !codonErr); codonErr = false;
         dock.classList.remove('cur'); dock.innerHTML = `<div class="dock-in">${tRNAMini(aa, want === '*' ? '' : antiOf(cur))}</div>`;
         if (want === '*') { stopped = true; say('STOP codon! A release factor binds in the A site, and the ribosome lets go of the finished polypeptide.', true); setTimeout(() => { phase = 'done'; drawTrack(); task(); finish(true); }, 900); return; }
         say(`${cur} pairs with anticodon ${antiOf(cur)}: <b>${AANAME[aa]} (${AA3[aa]})</b>. A peptide bond links it to the chain.`, true);
@@ -3085,7 +3259,7 @@ reg({
         if (pct >= 80) confetti(80);
         const extra = G.total && !stopped ? `<p>You built the first <b>${chain.length}</b> amino acids. The finished ${G.name.split(' (')[0].toLowerCase()} polypeptide is about <b>${G.total}</b> amino acids long, so the ribosome keeps going!</p>` : '';
         $('#nx', arena).innerHTML = `<div class="panel">${extra}<p style="margin:0">${G.job}</p><p class="muted" style="margin:.5em 0 0">Codons translated with no mistakes or hints: ${clean} / ${codons.length}</p></div>
-          <div class="row" style="margin-top:10px">${G.id === 'hbb' ? '<button class="btn" id="mut">Mutation challenge: sickle cell</button>' : ''}<button class="btn ${G.id === 'hbb' ? 'ghost' : ''}" id="again">Another gene</button><button class="btn ghost" data-go="structure">Take the Structure Check</button></div>`;
+          <div class="row" style="margin-top:10px">${G.id === 'hbb' && !ez ? '<button class="btn" id="mut">Mutation challenge: sickle cell</button>' : ''}<button class="btn ${G.id === 'hbb' && !ez ? 'ghost' : ''}" id="again">Another gene</button><button class="btn ghost" data-go="structure">Take the Structure Check</button></div>`;
         $('#again', arena).onclick = () => g.run(arena, g);
         const m = $('#mut', arena); if (m) m.onclick = () => { const M = { ...G, code: G.code.slice(0, 19) + 'U' + G.code.slice(20), name: 'Hemoglobin (beta chain), sickle cell mutation' }; build(M, { startAt: 6, chain: chain.slice(0, 6), mutant: true }); say('One DNA base changed, so codon 7 is different now (outlined in red). Translate the new codon 7!'); };
       }
@@ -3222,13 +3396,13 @@ function autoTaskButtons(host, { onShowWrong, onGiveUp }) {
   $('#tw', host).onclick = onShowWrong; $('#tg', host).onclick = onGiveUp;
 }
 function taskNext(host, res, score) { $('.row', host).innerHTML = '<button class="btn">Next</button>'; $('.row button', host).onclick = () => res(score); }
-function binTask(host, cats, cards) {
+function binTask(host, cats, cards, key = 'levels') {
   return new Promise(res => {
     host.innerHTML = `<div class="qcard" style="max-width:none"><h3>Drag each card (words and pictures) into the protein structure level it shows.</h3><div class="bank" data-drop="bank">${shuffle(cards.map((cd, k) => ({ cd, k }))).map(({ cd: [t, c, pic], k }) => `<span class="chip ${pic ? 'pic-chip' : ''}" data-drag data-c="${c}" data-k="${k}" ${pic ? `aria-label="${pic}"` : ''}>${t}</span>`).join('')}</div>
       <div class="bins" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">${cats.map((n, i) => `<div class="bin" data-drop="${i}"><h4>${n}</h4></div>`).join('')}</div><div class="feedback" id="bfb"></div><div class="row"></div></div>`;
     let first = null, done = false; const fb = $('#bfb', host);
     const placed = () => $$('.bin .chip', host), countOk = () => placed().filter(c => c.dataset.c === c.closest('.bin').dataset.drop).length;
-    const finish = (ok, msg) => { done = true; placed().forEach(c => { const good = c.dataset.c === c.closest('.bin').dataset.drop; c.classList.add(good ? 'ok' : 'no'); c.removeAttribute('data-drag'); }); fb.className = 'feedback ' + (ok === cards.length ? 'ok' : 'no'); fb.textContent = msg; taskNext(host, res, [first ?? ok, cards.length]); };
+    const finish = (ok, msg) => { done = true; placed().forEach(c => { const good = c.dataset.c === c.closest('.bin').dataset.drop; c.classList.add(good ? 'ok' : 'no'); c.removeAttribute('data-drag'); }); fb.className = 'feedback ' + (ok === cards.length ? 'ok' : 'no'); fb.textContent = msg; flag(key, (first ?? ok) === cards.length); taskNext(host, res, [first ?? ok, cards.length]); };
     DnD(host, (chip, t) => {
       if (done) return;
       (t.dataset.drop === 'bank' ? $('.bank', host) : t).appendChild(chip); $$('.chip', host).forEach(c => c.classList.remove('ok', 'no')); fb.textContent = '';
@@ -3246,20 +3420,20 @@ function picTask(host, target) {
     const lv = [0, 1, 2, 3];
     host.innerHTML = `<div class="qcard"><h3>Tap the model that shows <u>${names[target]}</u> structure.</h3><div class="pics">${shuffle(lv).map(l => `<button class="pic" data-l="${l}" aria-label="protein model option">${thumb(l === 3 ? 3 : l)}</button>`).join('')}</div><div class="feedback" id="pfb"></div><div id="pnx"></div></div>`;
     $$('.pic', host).forEach(b => b.onclick = () => {
-      const ok = +b.dataset.l === target; $$('.pic', host).forEach(x => { x.disabled = true; if (+x.dataset.l === target) x.classList.add('ok'); }); if (!ok) b.classList.add('no');
+      const ok = +b.dataset.l === target; flag(['Primary structure', 'Secondary structure', 'Tertiary structure', 'Quaternary structure'][target], ok); $$('.pic', host).forEach(x => { x.disabled = true; if (+x.dataset.l === target) x.classList.add('ok'); }); if (!ok) b.classList.add('no');
       $('#pfb', host).className = 'feedback ' + (ok ? 'ok' : 'no'); $('#pfb', host).textContent = (ok ? 'Correct. ' : 'Not quite. ') + LEVEL_FACTS[target].n + ': ' + LEVEL_FACTS[target].shape.toLowerCase() + '.';
       $('#pnx', host).innerHTML = '<button class="btn">Next</button>'; $('#pnx button', host).onclick = () => res([ok ? 1 : 0, 1]);
     });
   });
 }
-function orderTask(host, prompt, items, leftLabels) {
+function orderTask(host, prompt, items, leftLabels, key = 'levels') {
   return new Promise(res => {
     host.innerHTML = `<div class="qcard"><h3>${prompt}</h3><div style="display:grid;grid-template-columns:${leftLabels ? 'auto ' : ''}minmax(0,1fr);gap:8px;align-items:start">${leftLabels ? `<div class="lvl-labels" style="display:grid;gap:8px;align-content:start">${leftLabels.map(l => `<div class="sortitem" style="justify-content:center;font-weight:800;background:var(--surface-2);min-height:0;padding-block:0">${l}</div>`).join('')}</div>` : ''}
       <ol class="sortlist" id="ol">${shuffle(items.map((s, i) => ({ s, i }))).map((o, k) => `<li class="sortitem" data-i="${o.i}" style="min-height:52px"><span class="grip">${gripSVG}</span><span class="num">${k + 1}</span><span class="txt">${o.s}</span><span class="mv"><button data-mv="up" aria-label="Move up">${upSVG}</button><button data-mv="dn" aria-label="Move down">${dnSVG}</button></span></li>`).join('')}</ol></div>
       <div class="feedback" id="ofb"></div><div class="row"></div></div>`;
     const ol = $('#ol', host), fb = $('#ofb', host); let hints = 0, done = false;
     const lis = () => $$('.sortitem', ol), countOk = () => lis().filter((li, k) => +li.dataset.i === k).length;
-    const finish = (score, msg) => { done = true; lis().forEach(li => { li.classList.add('ok'); li.querySelector('.grip').style.visibility = 'hidden'; li.querySelectorAll('.mv button').forEach(b => b.disabled = true); }); fb.className = 'feedback ok'; fb.textContent = msg; taskNext(host, res, [score, items.length]); };
+    const finish = (score, msg) => { done = true; lis().forEach(li => { li.classList.add('ok'); li.querySelector('.grip').style.visibility = 'hidden'; li.querySelectorAll('.mv button').forEach(b => b.disabled = true); }); fb.className = 'feedback ok'; fb.textContent = msg; flag(key, score === items.length); taskNext(host, res, [score, items.length]); };
     const sync = () => { const labs = $$('.lvl-labels .sortitem', host); if (!labs.length) return; lis().forEach((li, i) => { if (labs[i]) labs[i].style.height = li.getBoundingClientRect().height + 'px'; }); };
     const check = () => { sync(); if (done) return; if (countOk() === items.length) { finish(Math.max(0, items.length - hints), 'Correct order!'); confetti(40); } };
     sortable(ol, check);
@@ -3277,7 +3451,7 @@ function matchTask(host, pairs, prompt) {
       <div class="bank" data-drop="bank">${shuffle(pairs.map(([, b], i) => ({ b, i }))).map(o => `<span class="chip" data-drag data-i="${o.i}">${o.b}</span>`).join('')}</div><div class="feedback" id="mfb"></div><div class="row"></div></div>`;
     let first = null, done = false; const fb = $('#mfb', host);
     const slots = () => $$('.slotbox', host), countOk = () => slots().filter((sb, i) => +sb.querySelector('.chip')?.dataset.i === i).length;
-    const finish = (score, msg, ok) => { done = true; slots().forEach((sb, i) => { const c = sb.querySelector('.chip'); c.classList.add(+c.dataset.i === i ? 'ok' : 'no'); c.removeAttribute('data-drag'); }); fb.className = 'feedback ' + (ok ? 'ok' : 'no'); fb.textContent = msg; taskNext(host, res, [score, pairs.length]); };
+    const finish = (score, msg, ok) => { done = true; slots().forEach((sb, i) => { const c = sb.querySelector('.chip'); c.classList.add(+c.dataset.i === i ? 'ok' : 'no'); c.removeAttribute('data-drag'); }); fb.className = 'feedback ' + (ok ? 'ok' : 'no'); fb.textContent = msg; flag('jobs', score === pairs.length); taskNext(host, res, [score, pairs.length]); };
     DnD(host, (chip, t) => {
       if (done) return;
       if (t.dataset.drop === 'bank') $('.bank', host).appendChild(chip); else { const ex = t.querySelector('.chip'); if (ex && ex !== chip) $('.bank', host).appendChild(ex); t.appendChild(chip); }
@@ -3293,11 +3467,23 @@ function matchTask(host, pairs, prompt) {
 reg({
   id: 'structure', level: 3, icon: 'structure', title: 'Structure Check', blurb: 'Mixed practice on 1°–4° shapes, bonds and jobs.',
   how: 'Eight mixed challenges: sorting, picture ID, ordering, labeling, matching and scenarios. This is the best practice for the Level 3 part of the assessment.',
+  howEasy: 'Six short challenges about protein shapes: sort, tap, put in order, and match. Take your time. Each one checks itself.',
   async run(arena, g) {
     let got = 0, tot = 0; const add = ([a, b]) => { got += a; tot += b; };
-    const host = document.createElement('div'); arena.innerHTML = `<div class="status"><div class="stat" id="qn"><span>Challenge</span>1 / 8</div></div>`; arena.appendChild(host);
-    const setN = n => { const e = $('#qn', arena); if (e) e.innerHTML = `<span>Challenge</span>${n} / 8`; };
+    const ez = easy(), N = ez ? 6 : 8;
+    const host = document.createElement('div'); arena.innerHTML = `<div class="status"><div class="stat" id="qn"><span>Challenge</span>1 / ${N}</div></div>`; arena.appendChild(host);
+    const setN = n => { const e = $('#qn', arena); if (e) e.innerHTML = `<span>Challenge</span>${n} / ${N}`; };
     const alive = () => document.body.contains(host);
+    const mc = (key, ...a) => mcQuestion(host, ...a).then(ok => { flag(key, ok); return [ok ? 1 : 0, 1]; });
+    if (ez) { // Focus mode: one picture per level, three choices instead of four, three matches instead of six, no chemistry labeling
+      add(await binTask(host, ['1° Primary', '2° Secondary', '3° Tertiary', '4° Quaternary'], [[thumb(0), 0, 'picture: a straight chain of amino acids'], [helixThumb(), 1, 'picture: a coiled spiral'], [thumb(2), 2, 'picture: one chain folded into a ball'], [thumb(3), 3, 'picture: four folded chains packed together'], ['Just the order of the amino acids', 0], ['Two or more chains joined together', 3]])); if (!alive()) return; setN(2);
+      add(await picTask(host, pick([2, 3]))); if (!alive()) return; setN(3);
+      add(await orderTask(host, 'Letters make words. Words make sentences. Sentences make paragraphs. Put the cards in that order, from 1° to 4°.', ['Alphabet', 'Words', 'Sentences', 'Paragraphs'], ['1°', '2°', '3°', '4°'])); if (!alive()) return; setN(4);
+      add(await mc('Denaturation', 'A clear egg white turns solid white when it is cooked. What happened to its proteins?', ['They lost their shape.', 'They turned into DNA and left the egg.', 'The hot pan dyed them a white color.'], 0, 'Heat breaks the weak bonds that hold a protein in shape. The protein unravels. That is called denaturation, and it cannot be undone.')); if (!alive()) return; setN(5);
+      add(await matchTask(host, [['<b>Hemoglobin</b>', 'Carries oxygen in your blood'], ['<b>Keratin</b>', 'Makes hair and nails strong'], ['<b>Enzyme</b>', 'Speeds up a chemical reaction']], 'Match each protein to its job.')); if (!alive()) return; setN(6);
+      add(await mc('shape', 'A protein gets bent into the wrong shape. What happens to its job?', ['It may stop working.', 'Its job always stays exactly the same.', 'It turns into a carbohydrate instead.'], 0, 'Shape decides the job. A protein with the wrong shape cannot fit its target, so it cannot do its job.')); if (!alive()) return;
+      return finishPanel(arena, g, got, tot, 'Points across all six challenges.', () => g.run(arena, g));
+    }
     add(await binTask(host, ['1° Primary', '2° Secondary', '3° Tertiary', '4° Quaternary'], [
       ['A simple chain: Met-Val-His-Leu', 0], ['Alpha helix held by hydrogen bonds', 1], ['Keratin in hair', 1], ['One chain folded into a crumpled 3-D shape', 2], ['Enzymes, pigments and hormones', 2], ['Hemoglobin\'s four chains', 3],
       [thumb(0), 0, 'picture: a straight chain of amino acids'], [helixThumb(), 1, 'picture: a coiled spiral'], [sheetThumb(), 1, 'picture: a zig-zag folded sheet'], [thumb(2), 2, 'picture: one chain folded into a ball'], [thumb(3), 3, 'picture: four folded chains packed together']])); if (!alive()) return; setN(2);
@@ -3314,16 +3500,17 @@ reg({
         $('#bd .diagram', host).style.minWidth = '600px';
       };
     })); if (!alive()) return; setN(5);
-    add(await mcQuestion(host, 'In our inquiry lab, one test tube of liquid egg white (albumin) turned from clear to completely white, earning a 4 on the denaturation scale. What does that color change tell you?', ['The albumin proteins unraveled when bonds holding their shape broke.', 'The chemical dyed the albumin white, but its 3-D shape stayed the same.', 'The albumin\'s amino acid order changed, so its gene now codes a new protein.', 'The albumin broke down into free nucleotides, which look cloudy white.'], 0, 'Albumin\'s shape is held by hydrogen bonds and disulfide bonds. Heat, salt, acid, base, alcohol or heavy metals disrupt those bonds, so the protein unravels (denatures) and its properties change: clear becomes white. The amino acid sequence itself never changes, and that\'s also why a cooked egg white can\'t turn clear again.').then(ok => [ok ? 1 : 0, 1])); if (!alive()) return; setN(6);
+    add(await mc('Denaturation', 'In our inquiry lab, one test tube of liquid egg white (albumin) turned from clear to completely white, earning a 4 on the denaturation scale. What does that color change tell you?', ['The albumin proteins unraveled when bonds holding their shape broke.', 'The chemical dyed the albumin white, but its 3-D shape stayed the same.', 'The albumin\'s amino acid order changed, so its gene now codes a new protein.', 'The albumin broke down into free nucleotides, which look cloudy white.'], 0, 'Albumin\'s shape is held by hydrogen bonds and disulfide bonds. Heat, salt, acid, base, alcohol or heavy metals disrupt those bonds, so the protein unravels (denatures) and its properties change: clear becomes white. The amino acid sequence itself never changes, and that\'s also why a cooked egg white can\'t turn clear again.')); if (!alive()) return; setN(6);
     add(await matchTask(host, [['<b>Hemoglobin</b>', 'Carries oxygen in red blood cells'], ['<b>Keratin</b>', 'Strengthens hair and nails'], ['<b>Amylase</b> (enzyme)', 'Speeds up the breakdown of starch'], ['<b>Insulin</b> (hormone)', 'Signals cells to take in glucose'], ['<b>Antibody</b>', 'Binds to a specific invader'], ['<b>Myosin</b>', 'Helps muscle cells contract']], 'Match each protein to the job its shape lets it do.')); if (!alive()) return; setN(7);
-    add(await orderTask(host, 'Sickle cell disease: put the cause-and-effect chain in order, from DNA to the organism.', ['One base in the hemoglobin gene changes (A to T).', 'The mRNA codon changes from GAG to GUG.', 'Valine replaces glutamic acid in the polypeptide.', 'The hemoglobin protein folds and clumps differently.', 'Red blood cells bend into a sickle shape and carry less oxygen.'])); if (!alive()) return; setN(8);
-    add(await mcQuestion(host, 'Two proteins contain exactly the same 20 kinds of amino acids, yet one is an enzyme and the other is a hormone. What best explains the difference?', ['Their amino acids are in a different order, so they fold differently.', 'The enzyme is made in the nucleus, while the hormone is made by ribosomes.', 'The enzyme uses uracil in its chain, while the hormone uses thymine instead.', 'The hormone is a carbohydrate, so it never folds the way enzymes do.'], 0, 'Sequence → shape → function. Like words in a sentence, reordering the same amino acids changes the meaning (shape) of the protein.').then(ok => [ok ? 1 : 0, 1])); if (!alive()) return;
+    add(await orderTask(host, 'Sickle cell disease: put the cause-and-effect chain in order, from DNA to the organism.', ['One base in the hemoglobin gene changes (A to T).', 'The mRNA codon changes from GAG to GUG.', 'Valine replaces glutamic acid in the polypeptide.', 'The hemoglobin protein folds and clumps differently.', 'Red blood cells bend into a sickle shape and carry less oxygen.'], null, 'sickle')); if (!alive()) return; setN(8);
+    add(await mc('shape', 'Two proteins contain exactly the same 20 kinds of amino acids, yet one is an enzyme and the other is a hormone. What best explains the difference?', ['Their amino acids are in a different order, so they fold differently.', 'The enzyme is made in the nucleus, while the hormone is made by ribosomes.', 'The enzyme uses uracil in its chain, while the hormone uses thymine instead.', 'The hormone is a carbohydrate, so it never folds the way enzymes do.'], 0, 'Sequence → shape → function. Like words in a sentence, reordering the same amino acids changes the meaning (shape) of the protein.')); if (!alive()) return;
     finishPanel(arena, g, got, tot, 'Points across all eight challenges.', () => g.run(arena, g));
   }
 });
 
 /* ---------- ENIGMA DECODER (central dogma secret messages) ---------- */
 const ENIGMA_MSGS = ['GREAT', 'CHEF', 'RECIPE', 'MARTY', 'SCIENCE', 'PEPTIDE', 'GENETICS', 'TRAIL', 'HELP', 'SALSA'];
+const ENIGMA_EASY = ['CHEF', 'HELP', 'GENE', 'CELL', 'MEAL']; // Focus mode: four-letter messages
 const ENIGMA_BAD = /[BJOUXZ]/;
 function encodeMessage(msg) {
   let junk, mr;
@@ -3341,11 +3528,12 @@ function codonTable(onPick) {
 reg({
   id: 'enigma', level: 3, icon: 'enigma', title: 'Enigma Decoder', blurb: 'Crack secret messages hidden in DNA, just like the class activity.',
   how: 'A secret DNA transmission has been intercepted. Transcribe it into mRNA, find the start codon, then translate each codon with the codon chart. Each amino acid\'s one-letter code is a letter of the secret message.',
+  howEasy: 'Crack a short secret word in three steps. 1: Tap the RNA letter that pairs with each DNA letter (use the pairing key). 2: Tap AUG. 3: Find each codon on the chart.',
   run(arena, g) {
-    let missions = 0;
+    let missions = 0; const ez = easy();
     const radar = `<svg class="radar" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" style="fill:#0B2A1E;stroke:#3BE38B;stroke-width:2"/><circle cx="60" cy="60" r="36" style="fill:none;stroke:#3BE38B;stroke-width:1;opacity:.5"/><circle cx="60" cy="60" r="18" style="fill:none;stroke:#3BE38B;stroke-width:1;opacity:.5"/><path d="M60 6 V114 M6 60 H114" style="stroke:#3BE38B;stroke-width:1;opacity:.35"/><g class="sweep"><path d="M60 60 L60 6 A54 54 0 0 1 98 22 Z" style="fill:#3BE38B;opacity:.35"/><line x1="60" y1="60" x2="60" y2="6" style="stroke:#3BE38B;stroke-width:2"/></g><circle class="blip" cx="84" cy="38" r="4" style="fill:#7CFFB8"/><circle class="blip" cx="40" cy="80" r="3" style="fill:#7CFFB8;animation-delay:-.8s"/></svg>`;
     function mission() {
-      const dna = encodeMessage(pick(ENIGMA_MSGS)).dna, mrna = [...dna].map(b => dnaToMrna[b]).join(''), start = mrna.indexOf('AUG');
+      const dna = encodeMessage(pick(ez ? ENIGMA_EASY : ENIGMA_MSGS)).dna, mrna = [...dna].map(b => dnaToMrna[b]).join(''), start = mrna.indexOf('AUG');
       const cods = []; for (let i = start + 3; i + 3 <= mrna.length; i += 3) { const c = mrna.substr(i, 3); cods.push(c); if (CODON2AA[c] === '*') break; }
       const nLetters = cods.filter(c => CODON2AA[c] !== '*').length;
       let pos = 0, phase = 'typing', ci = 0, errs = 0, busy = false; const letters = [];
@@ -3362,7 +3550,9 @@ reg({
       const fb = $('#fb', arena), work = $('#work', arena), dnaRow = $('#dnaRow', arena), mRow = $('#mRow', arena);
       const say = (m, ok) => { fb.className = 'feedback ' + (ok ? 'ok' : 'no'); fb.innerHTML = m; };
       const setStep = s => $$('#steps span', arena).forEach(el => { const k = +el.dataset.s; el.className = k < s ? 'done' : k === s ? 'cur' : ''; });
-      const miss = () => { errs++; $('#errs', arena).innerHTML = `<span>Mistakes</span>${errs}`; };
+      const pe = { tx: 0, start: 0, tl: 0 }; // mistakes in each step, for the note card
+      const miss = () => { errs++; pe[phase]++; $('#errs', arena).innerHTML = `<span>Mistakes</span>${errs}`; };
+      const judge = (key, n, strict) => { if (n === 0) flag(key, true); else if (strict || n >= 2) flag(key, false); };
       const mTiles = () => $$('.base', mRow), dTiles = () => $$('.base', dnaRow);
       // 1. the transmission types itself in, base by base
       (async () => {
@@ -3373,7 +3563,7 @@ reg({
       function highlight() { dTiles().forEach((t, i) => t.classList.toggle('in', phase === 'tx' && i === pos)); mTiles().forEach((t, i) => t.classList.toggle('cur', phase === 'tx' && i === pos)); const t = dTiles()[pos]; if (t) t.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); }
       function showTx() {
         say('Transcribe it: tap or type the mRNA base that pairs with each highlighted DNA base.', true);
-        work.innerHTML = `<div class="row">${[...'AUGC'].map(k => `<button class="base ${k}" data-k="${k}" style="width:62px;height:62px;font-size:1.6rem;border:0">${k}</button>`).join('')}</div>`;
+        work.innerHTML = `${ez ? `<div class="ez-key"><b>Pairing key</b>${[['A', 'U'], ['T', 'A'], ['G', 'C'], ['C', 'G']].map(([d, r]) => `<span>${baseTile(d)}<i>→</i>${baseTile(r)}</span>`).join('')}<em>DNA → RNA</em></div>` : ''}<div class="row">${[...'AUGC'].map(k => `<button class="base ${k}" data-k="${k}" style="width:62px;height:62px;font-size:1.6rem;border:0">${k}</button>`).join('')}</div>`;
         $$('[data-k]', work).forEach(b => b.onclick = () => key(b.dataset.k));
       }
       function key(k) {
@@ -3381,7 +3571,7 @@ reg({
         const need = mrna[pos], slot = mTiles()[pos];
         if (k !== need) { miss(); bump(slot); say(`${dna[pos]} in DNA pairs with ${need} in RNA${dna[pos] === 'A' ? ' (uracil, because RNA has no thymine)' : ''}.`); return; }
         slot.className = `base ${need} flip-in`; slot.textContent = need; pos++;
-        if (pos >= mrna.length) { phase = 'start'; highlight(); return showStart(); }
+        if (pos >= mrna.length) { judge('pairing', pe.tx); phase = 'start'; highlight(); return showStart(); }
         highlight();
       }
       function showStart() {
@@ -3390,7 +3580,7 @@ reg({
         mTiles().forEach((t, i) => t.onclick = () => {
           if (phase !== 'start') return;
           if (i >= start && i <= start + 2) {
-            phase = 'tl'; mTiles().forEach((x, j) => { x.classList.remove('pick'); x.onclick = null; if (j < start) x.classList.add('lead'); if (j >= start && j < start + 3) x.classList.add('glow'); if (j >= start && (j - start) % 3 === 2) x.classList.add('cgap'); });
+            judge('Start codon', pe.start, true); phase = 'tl'; mTiles().forEach((x, j) => { x.classList.remove('pick'); x.onclick = null; if (j < start) x.classList.add('lead'); if (j >= start && j < start + 3) x.classList.add('glow'); if (j >= start && (j - start) % 3 === 2) x.classList.add('cgap'); });
             say('START codon found! Methionine (M) unlocks every message but is not part of it.', true);
             setTimeout(showTl, 900);
           } else { miss(); bump(t); say(mrna.substr(i, 3) === 'AUG' ? 'That is AUG, but is it the first one?' : 'Not the start. Read left to right (5′ to 3′) and look for A-U-G.'); }
@@ -3423,7 +3613,7 @@ reg({
         showTl();
       }
       async function reveal() {
-        setStep(3); work.innerHTML = ''; mTiles().forEach(t => t.classList.remove('in'));
+        setStep(3); work.innerHTML = ''; mTiles().forEach(t => t.classList.remove('in')); judge('wheel', pe.tl);
         record(g.id, Math.max(0, cods.length - errs), cods.length);
         say('STOP codon! Translation is over. Decrypting...', true);
         const rot = $$('#rotor span', arena);
@@ -3475,6 +3665,8 @@ reg({
     const P = store.data.inv = Object.assign({ hi: 0, sound: false, relaxed: false }, store.data.inv || {});
     const RAYS = [[['DNA', 'the master code'], ['RNA', 'the messenger'], ['PROTEIN', 'the worker']], [['TRANSCRIPTION', 'DNA → RNA'], ['TRANSLATION', 'RNA → protein'], ['FOLDING', 'chain → 3-D shape']]];
     const RC = ['#4C8DF0', '#47C47E', '#F06A9A'];
+    const slow = () => P.relaxed || easy(), hintAt = easy() ? 1 : 2; // Focus mode: always relaxed speed, and the hint shows after one wrong ray
+    const rxTog = id => `<button class="inv-tog" id="${id}" aria-pressed="${slow()}"${easy() ? ' disabled title="Focus mode keeps the speed relaxed"' : ''}>Relaxed speed <em>${slow() ? 'On' : 'Off'}</em></button>`;
     let AC = null, cleanup = [];
     const audio = () => { if (!P.sound) return null; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); return AC; } catch (e) { return null; } };
     const tone = (f, d, type = 'square', v = .05, f2) => { const a = audio(); if (!a) return; const t = a.currentTime, o = a.createOscillator(), gn = a.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d); gn.gain.setValueAtTime(v, t); gn.gain.exponentialRampToValueAtTime(.0001, t + d); o.connect(gn).connect(a.destination); o.start(t); o.stop(t + d + .02); };
@@ -3502,7 +3694,7 @@ reg({
           <div class="ic-card"><h3>WATCH OUT</h3><div class="ic-keys"><svg viewBox="0 0 24 34" width="18" height="26" aria-hidden="true"><path d="M8 2l8 6-8 6 8 6-8 6 8 6" style="fill:none;stroke:#FF5A5A;stroke-width:3;stroke-linejoin:round;stroke-linecap:round"/></svg></div><p>Wrong ray? The invader shoots back. Dodge the red bolts!</p></div>
         </div>
         <div class="inv-legend"><span class="ufo-leg"><svg viewBox="0 0 40 20" width="30" height="15" aria-hidden="true"><ellipse cx="20" cy="9" rx="15" ry="7" style="fill:#8C6A55"/><ellipse cx="20" cy="13" rx="11" ry="4" style="fill:#C9B8A2"/></svg>Hit the ribosome ship for a bonus</span><span class="ufo-leg">${KC('P')} Pause</span></div>
-        <div class="inv-opts"><button class="inv-tog" id="tRx" aria-pressed="${P.relaxed}">Relaxed speed <em>${P.relaxed ? 'On' : 'Off'}</em></button><button class="inv-tog" id="tSd" aria-pressed="${P.sound}">Sound <em>${P.sound ? 'On' : 'Off'}</em></button></div>
+        <div class="inv-opts">${rxTog('tRx')}<button class="inv-tog" id="tSd" aria-pressed="${P.sound}">Sound <em>${P.sound ? 'On' : 'Off'}</em></button></div>
         <button class="inv-launch" id="go">Launch ${icon('play', 20)}</button>
         <p class="inv-hi">HIGH SCORE <b>${String(P.hi).padStart(5, '0')}</b></p></div>`;
       const tog = (id, k) => { const b = $('#' + id, arena); b.onclick = () => { P[k] = !P[k]; b.setAttribute('aria-pressed', P[k]); b.querySelector('em').textContent = P[k] ? 'On' : 'Off'; store.save(); if (k === 'sound' && P.sound) SFX.bonus(); }; };
@@ -3578,7 +3770,7 @@ reg({
         v.alive = false; v.el.classList.remove('tgt'); v.el.classList.add('boom'); if (s.tgt === v) s.tgt = null;
         const px = v.x + invW / 2, py = v.y + v.h / 2, mu = mult(), pts = (v.wrong ? 40 : 100) * mu, set = setNow();
         burst(px, py, RC[r], 36, 280); burst(px, py, '#FFFFFF', 12, 170);
-        if (!v.wrong) s.first++;
+        if (!v.wrong) { s.first++; flag(set ? 'txvstl' : 'molecules', true); }
         s.combo++; s.score += pts; s.shake = Math.max(s.shake, 6);
         s.floats.push({ t: `+${pts}`, sub: RAYS[set][r][0], x: px, y: py, life: 1.15, c: RC[r] });
         SFX.boom(); msg(`${v.d[0]}  →  ${RAYS[set][r][0]}${mu > 1 ? `   ·   Combo x${mu}!` : ''}`, 'ok'); hud();
@@ -3588,11 +3780,12 @@ reg({
         const set = setNow(), names = RAYS[set], c = v.d[1];
         v.wrong++; s.combo = 0; burst(sh.x, v.y + v.h, RC[r], 12, 140);
         v.el.style.setProperty('--rc', RC[r]); bump(v.el, 'deflect');
-        if (v.wrong >= 2 && !v.el.classList.contains('hint')) { v.el.classList.add('hint'); v.el.style.setProperty('--hc', RC[c]); v.el.querySelector('.lab').insertAdjacentHTML('beforeend', `<em class="hint-tag">${names[c][0]}</em>`); }
+        flag(set ? 'txvstl' : 'molecules', false);
+        if (v.wrong >= hintAt && !v.el.classList.contains('hint')) { v.el.classList.add('hint'); v.el.style.setProperty('--hc', RC[c]); v.el.querySelector('.lab').insertAdjacentHTML('beforeend', `<em class="hint-tag">${names[c][0]}</em>`); }
         s.missed.set(v.d[0], [names[c][0], RC[c]]);
         s.floats.push({ t: `NOT ${names[r][0]}`, x: clamp(sh.x, 60, W - 60), y: v.y + v.h + 18, life: 1, c: '#FF7B7B', small: true });
-        msg(v.wrong >= 2 ? `Hint: “${v.d[0]}” goes with ${names[c][0]}.` : `“${v.d[0]}” is not ${names[r][0]}. Dodge, it’s firing back!`, 'no');
-        SFX.wrong(); s.bolts.push({ x: v.x + invW / 2, y: v.y + v.h, vy: P.relaxed ? 150 : 235 }); hud();
+        msg(v.wrong >= hintAt ? `Hint: “${v.d[0]}” goes with ${names[c][0]}.` : `“${v.d[0]}” is not ${names[r][0]}. Dodge, it’s firing back!`, 'no');
+        SFX.wrong(); s.bolts.push({ x: v.x + invW / 2, y: v.y + v.h, vy: slow() ? 150 : 235 }); hud();
       }
       function shipHit() {
         s.lives--; s.inv = 1.8; s.combo = 0; s.shake = 12; burst(s.shipX, shipY, '#4B9CD3', 30, 220); burst(s.shipX, shipY, '#FFB547', 20, 160); SFX.hit();
@@ -3620,7 +3813,7 @@ reg({
       function panel(mode) {
         const bn = $('#ibn', arena);
         bn.innerHTML = `<div class="inv-panel" role="dialog" aria-label="${mode === 'settings' ? 'Settings' : 'Paused'}"><b>${mode === 'settings' ? 'SETTINGS' : 'PAUSED'}</b>
-          <div class="inv-opts"><button class="inv-tog" id="pRx" aria-pressed="${P.relaxed}">Relaxed speed <em>${P.relaxed ? 'On' : 'Off'}</em></button><button class="inv-tog" id="pSd" aria-pressed="${P.sound}">Sound <em>${P.sound ? 'On' : 'Off'}</em></button></div>
+          <div class="inv-opts">${rxTog('pRx')}<button class="inv-tog" id="pSd" aria-pressed="${P.sound}">Sound <em>${P.sound ? 'On' : 'Off'}</em></button></div>
           <p class="inv-pnote">Relaxed speed slows the invaders down, and they only shoot back after a wrong ray. Changes take effect right away.</p>
           <button class="inv-launch" id="ires">Resume ${icon('play', 20)}</button>
           <div class="inv-opts"><button class="inv-tog" id="pRs">${restartIcon} Restart game</button><button class="inv-tog" id="pTi">Title screen</button><button class="inv-tog" data-home>${chev} Main menu</button></div></div>`;
@@ -3645,9 +3838,9 @@ reg({
         s.cool = Math.max(0, s.cool - dt); s.inv = Math.max(0, s.inv - dt); s.glowT -= dt; s.shake *= Math.pow(.86, dt * 60); s.breachT = Math.max(0, s.breachT - dt);
         if (s.hold > 0) s.hold -= dt;
         else if (!s.over) {
-          const alive = s.invs.filter(v => v.alive).length, base = [640, 580, 620, 540][s.wave] * (P.relaxed ? 1.6 : 1), lo = 230 * (P.relaxed ? 1.5 : 1);
+          const alive = s.invs.filter(v => v.alive).length, base = [640, 580, 620, 540][s.wave] * (slow() ? 1.6 : 1), lo = 230 * (slow() ? 1.5 : 1);
           s.stepAcc += dt * 1000; if (s.stepAcc >= lo + (base - lo) * Math.max(0, alive - 1) / 5) { s.stepAcc = 0; step(); }
-          if (!P.relaxed) { s.boltT -= dt; if (s.boltT <= 0) { s.boltT = Math.max(1.4, 2.6 + Math.random() * 2.4 - s.wave * .35); const cols = [0, 1, 2].map(c => s.invs.filter(v => v.alive && v.col === c).sort((a, b) => b.row - a.row)[0]).filter(Boolean); const v = cols[rnd(cols.length)]; if (v) s.bolts.push({ x: v.x + invW / 2, y: v.y + v.h, vy: 190 + s.wave * 22 }); } }
+          if (!slow()) { s.boltT -= dt; if (s.boltT <= 0) { s.boltT = Math.max(1.4, 2.6 + Math.random() * 2.4 - s.wave * .35); const cols = [0, 1, 2].map(c => s.invs.filter(v => v.alive && v.col === c).sort((a, b) => b.row - a.row)[0]).filter(Boolean); const v = cols[rnd(cols.length)]; if (v) s.bolts.push({ x: v.x + invW / 2, y: v.y + v.h, vy: 190 + s.wave * 22 }); } }
           s.ufoT -= dt;
           if (!s.ufo && s.ufoT <= 0) { const d = Math.random() < .5 ? 1 : -1; s.ufo = { x: d > 0 ? -40 : W + 40, y: 22, vx: d * Math.max(110, W / 5.5) }; s.ufoT = 15 + Math.random() * 10; }
         }
@@ -3925,7 +4118,7 @@ function renderHome() {
   const intro = !homeIntroDone; homeIntroDone = true;
   app().innerHTML = `<div class="wrap home${intro ? ' intro' : ''}">
     <section class="hero-band">
-      <div class="hb-top"><span class="hb-chip">Biology · Standard 1.4 · HS-LS1-1</span><span class="top-actions"><button class="btn ghost small hb-ev" data-go="evidence">${icon('evidence', 18)} My Evidence</button>${setBtn(true)}</span></div>
+      <div class="hb-top"><span class="hb-chip">Biology · Standard 1.4 · HS-LS1-1</span>${easy() ? '<button type="button" class="hb-chip ez-on" data-settings title="Tap to change it in Settings">Focus mode on</button>' : ''}<span class="top-actions"><button class="btn ghost small hb-ev" data-go="evidence">${icon('evidence', 18)} My Evidence</button>${setBtn(true)}</span></div>
       <div class="title-row"><svg class="title-mustang" viewBox="278 -44 884 888" aria-hidden="true"><circle cx="720" cy="400" r="425" style="fill:#DCEEFB;stroke:#4B9CD3;stroke-width:22"/>${mustangUse()}</svg>
         <div class="title-text"><h1 class="title-logo">${titleSVG()}<span class="sr">Mustang Fold Rush</span></h1><p class="subtitle">Code it. Build it. <em>Fold it.</em></p></div></div>
       <div class="hb-grid">
@@ -4023,6 +4216,7 @@ async function evidenceCanvas(paged = false) {
       gs.forEach((x, i) => {
         const r = G[x.id]; if (i % 2 === 0) { c.fillStyle = '#F4F8FC'; c.fillRect(M, y, CW, 60); }
         c.fillStyle = NAVY; c.font = `700 28px ${BODY}`; c.fillText(x.title, cols[0], y + 40, 700);
+        if (r && r.fz) { const tw2 = Math.min(700, c.measureText(x.title).width); c.fillStyle = INK2; c.font = `700 18px ${BODY}`; c.fillText('Focus mode', cols[0] + tw2 + 14, y + 39); }
         if (r) { rr(c, cols[1], y + 22, 220, 16, 8); c.fillStyle = '#E1ECF6'; c.fill(); rr(c, cols[1], y + 22, Math.max(16, 220 * r.best / 100), 16, 8); c.fillStyle = r.best >= 80 ? '#23895A' : r.best >= 60 ? CAR : '#E3A21A'; c.fill(); c.fillStyle = NAVY; c.font = `800 28px ${BODY}`; c.fillText(r.best + '%', cols[1] + 238, y + 40); }
         else { c.fillStyle = '#93A7BE'; c.font = `400 28px ${BODY}`; c.fillText('Not played', cols[1], y + 40); }
         c.fillStyle = NAVY; c.font = `400 28px ${BODY}`; c.fillText(r ? String(r.plays) : '0', cols[2], y + 40); c.fillStyle = r ? NAVY : '#93A7BE'; c.fillText(shortWhen(r && r.when), cols[3], y + 40, W - M - cols[3]);
@@ -4030,6 +4224,20 @@ async function evidenceCanvas(paged = false) {
       });
       c.strokeStyle = LINE; c.lineWidth = 2; c.beginPath(); c.moveTo(M, y); c.lineTo(W - M, y); c.stroke(); y += 50;
     });
+    // note card recommendations (the same list as on the page)
+    {
+      const rec = noteRecs().work.slice(0, 5), F1 = `400 26px ${BODY}`, F2 = `italic 400 24px ${BODY}`;
+      const rows = rec.map(r => ({ t: noteTitle(r.k), a: lines(c, NOTE_SAY[r.k][0], F1, CW - 80), b: lines(c, 'Tip: ' + NOTE_SAY[r.k][1], F2, CW - 80) }));
+      const hOf = n => 46 + n.a.length * 34 + n.b.length * 32 + 20, bh = rows.length ? rows.reduce((h, n) => h + hOf(n), 24) : 84;
+      need(100 + bh + 60);
+      c.fillStyle = NAVY; c.font = `800 40px ${DISP}`; c.fillText('Note card recommendations', M, y + 10); y += 48;
+      c.fillStyle = INK2; c.font = `italic 400 25px ${BODY}`; c.fillText('The words and ideas I missed most in the games, with a tip for each one.', M, y); y += 26;
+      rr(c, M, y, CW, bh, 18); c.fillStyle = '#FBFCFE'; c.fill(); c.strokeStyle = LINE; c.lineWidth = 2; c.stroke(); c.fillStyle = CAR; c.fillRect(M, y + 18, 8, bh - 36);
+      if (!rows.length) { c.fillStyle = '#93A7BE'; c.font = F1; c.fillText(played ? 'No trouble spots recorded so far.' : 'Play a few games to fill in this list.', M + 40, y + 52); }
+      let ny = y + 24;
+      rows.forEach(n => { c.fillStyle = NAVY; c.font = `800 28px ${BODY}`; c.fillText(n.t, M + 40, ny + 30, CW - 80); c.font = F1; n.a.forEach((l, i) => c.fillText(l, M + 40, ny + 66 + i * 34)); c.fillStyle = INK2; c.font = F2; n.b.forEach((l, i) => c.fillText(l, M + 40, ny + 66 + n.a.length * 34 + i * 32)); ny += hOf(n); });
+      y += bh + 70;
+    }
     // reflection
     need(150 + 44 + lines(c, refl || 'x', `400 30px ${BODY}`, CW - 70).length * 44 + 120);
     c.fillStyle = NAVY; c.font = `800 40px ${DISP}`; c.fillText('Reflection: Self-Directed Learner', M, y + 10); y += 48;
@@ -4078,6 +4286,22 @@ async function offerFile(filename, blob) {
   }
   const url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = filename; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000); toast('Downloaded ' + filename);
 }
+/* Note card recommendations: the ideas this student missed most (see flag / noteRecs), in plain words with a memory tip,
+   plus what they already know. With nothing missed yet it suggests three big ideas instead. */
+const NOTE_BIG = ['Central dogma', 'txvstl', 'shape'];
+function noteCardHTML() {
+  const { work, solid } = noteRecs(), played = GAMES.some(x => store.data.games[x.id]);
+  const item = (k, gid) => { const gm = GAMES.find(x => x.id === gid); return `<li><b>${noteTitle(k)}</b><span>${NOTE_SAY[k][0]}</span><em>Tip: ${NOTE_SAY[k][1]}</em>${gm ? `<button type="button" class="linkbtn" data-go="${gm.id}">Practice it in ${gm.title} →</button>` : ''}</li>`; };
+  const lead = work.length ? 'These are the words and ideas you missed most in the games. The list changes as you practice: stop missing one, and it drops off.' : played ? 'No trouble spots so far. Nice riding! These three big ideas are still worth a spot on your card.' : 'Play a few games first. This list fills in with the words and ideas that give you trouble. Until then, here are three big ideas for any note card.';
+  return `<section class="ev-card" id="ncard"><h3>${icon('define', 26)}Note card recommendations</h3>
+    <p class="nc-lead">${sayBtn('', 'Read this out loud')}${lead}</p>
+    <div class="nc-paper"><p class="nc-head">${work.length ? 'Write these on your note card' : 'Big ideas to write down'}</p><ol class="nc-list">${work.length ? work.map(r => item(r.k, r.g)).join('') : NOTE_BIG.map(k => item(k)).join('')}</ol></div>
+    ${solid.length ? `<div class="nc-solid"><b>You already know these. Save your card space for the list above.</b>${solid.map(r => `<span>${icon('check', 14)}${noteTitle(r.k)}</span>`).join('')}</div>` : ''}
+    <ul class="nc-how"><li>Use your own words. If you can say it simply, you know it.</li><li>Add a tiny drawing or an arrow next to each idea.</li><li>After you write one down, play that game again and see if it sticks.</li></ul>
+    <div class="row" style="margin-top:12px"><button class="btn ghost small" id="ncCopy">Copy my note card</button></div>
+  </section>`;
+}
+const noteCardText = () => { const { work } = noteRecs(), ks = work.length ? work.map(r => r.k) : NOTE_BIG; return 'My note card: Standard 1.4\n' + ks.map((k, i) => `${i + 1}. ${noteTitle(k)}: ${NOTE_SAY[k][0]}\n   Tip: ${NOTE_SAY[k][1]}`).join('\n'); };
 function renderEvidence() {
   const { G, played, avg, plays, lvls } = evStats();
   const refl = store.data.reflection || '';
@@ -4089,9 +4313,10 @@ function renderEvidence() {
       <section class="ev-card"><h3><span class="ev-n">1</span>Your scores</h3>
         <div class="ev-name"><label for="evn">Name on your artifact</label><div><input id="evn" value="${esc(store.data.name)}" placeholder="First and last name" autocomplete="name" maxlength="40"><span class="ev-ok" id="evnok" ${store.data.name ? '' : 'hidden'}>${icon('check', 18)} Saved</span></div></div>
         <div class="ev-tiles"><div><b>${played}/${GAMES.length}</b><span>Games played</span></div><div><b>${played ? avg + '%' : '—'}</b><span>Average best</span></div><div><b>${plays}</b><span>Practice rounds</span></div><div><b>${lvls}/3</b><span>Levels fully practiced</span></div></div>
-        ${LEVELS.map(L => { const gs = GAMES.filter(x => x.level === L.n); return `<div class="ev-lv lv${L.n}"><p class="kicker">Level ${L.n} · ${L.name}</p><table class="ev-table2"><tbody>${gs.map(x => { const r = G[x.id]; return `<tr><td class="g">${x.title}</td><td class="b">${r ? `<div class="bar"><i style="width:${r.best}%"></i></div><b>${r.best}%</b>` : '<span class="muted">Not played</span>'}</td><td class="p">${r ? r.plays + (r.plays === 1 ? ' play' : ' plays') : ''}</td><td class="w muted">${r ? esc(shortWhen(r.when)) : ''}</td></tr>`; }).join('')}</tbody></table></div>`; }).join('')}
+        ${LEVELS.map(L => { const gs = GAMES.filter(x => x.level === L.n); return `<div class="ev-lv lv${L.n}"><p class="kicker">Level ${L.n} · ${L.name}</p><table class="ev-table2"><tbody>${gs.map(x => { const r = G[x.id]; return `<tr><td class="g">${x.title}${r && r.fz ? '<span class="ev-fz">Focus mode</span>' : ''}</td><td class="b">${r ? `<div class="bar"><i style="width:${r.best}%"></i></div><b>${r.best}%</b>` : '<span class="muted">Not played</span>'}</td><td class="p">${r ? r.plays + (r.plays === 1 ? ' play' : ' plays') : ''}</td><td class="w muted">${r ? esc(shortWhen(r.when)) : ''}</td></tr>`; }).join('')}</tbody></table></div>`; }).join('')}
         ${played < GAMES.length ? `<p class="ev-tip">Want stronger evidence? Play the games you haven’t tried yet. Your best score always counts.</p>` : ''}
       </section>
+      ${noteCardHTML()}
       <section class="ev-card"><h3><span class="ev-n">2</span>Reflect: Self-Directed Learner</h3>
         <div class="ev-outcome"><span class="ev-oc-ic">${icon('evidence', 26)}</span><div><b>District Outcome: Self-Directed Learner</b><p>A self-directed learner takes ownership of their learning: they set goals, monitor their own progress, and change how they practice when something isn’t working.</p></div></div>
         <p class="ev-prompt"><b>Prompt:</b> How does this artifact show that you are a self-directed learner? Explain which games you chose and why, what your scores and mistakes told you, what you did to improve, and what you still want to work on before the assessment.</p>
@@ -4129,7 +4354,8 @@ function renderEvidence() {
   $('#evpng').onclick = async e => { const b = e.currentTarget; busy(b, true); try { const cv = await evidenceCanvas(); await offerFile(fileBase() + '.png', await canvasBlob(cv, 'image/png')); } finally { busy(b, false); ready(); } };
   $('#evpdf').onclick = async e => { const b = e.currentTarget; busy(b, true); try { const cv = await evidenceCanvas(true), pages = []; for (let top = 0; top < cv.height; top += 2200) { const pc = document.createElement('canvas'); pc.width = 1700; pc.height = 2200; pc.getContext('2d').drawImage(cv, 0, top, 1700, 2200, 0, 0, 1700, 2200); pages.push({ jpg: new Uint8Array(await (await canvasBlob(pc, 'image/jpeg', .92)).arrayBuffer()), w: 1700, h: 2200 }); } await offerFile(fileBase() + '.pdf', pdfFromJpegs(pages)); } finally { busy(b, false); ready(); } };
   $('#cp').onclick = () => { const t = `Mustang Fold Rush · Standard 1.4 · ${store.data.name || 'Student'} · ${new Date().toLocaleDateString()}\n` + LEVELS.map(L => `Level ${L.n}: ` + GAMES.filter(x => x.level === L.n).map(x => `${x.title} ${G[x.id] ? G[x.id].best + '%' : '—'}`).join(', ')).join('\n') + (store.data.reflection ? `\n\nReflection (Self-Directed Learner):\n${store.data.reflection.trim()}` : ''); navigator.clipboard?.writeText(t).then(() => toast('Summary copied'), () => toast('Copy was blocked. Download the PDF instead.')); };
-  $('#clr').onclick = () => { $('#conf').innerHTML = `<div class="panel" style="margin-top:10px">Erase all saved scores in this browser? Your name and reflection stay. (To erase everything, use Start over in Settings.) <button class="btn small" id="yes">Yes, reset</button> <button class="btn ghost small" id="no">Cancel</button></div>`; $('#yes').onclick = () => { store.data.games = {}; store.save(); renderEvidence(); }; $('#no').onclick = () => $('#conf').innerHTML = ''; };
+  $('#ncCopy').onclick = () => navigator.clipboard?.writeText(noteCardText()).then(() => toast('Note card copied'), () => toast('Copy was blocked. Write it by hand instead.'));
+  $('#clr').onclick = () => { $('#conf').innerHTML = `<div class="panel" style="margin-top:10px">Erase all saved scores and note card recommendations in this browser? Your name and reflection stay. (To erase everything, use Start over in Settings.) <button class="btn small" id="yes">Yes, reset</button> <button class="btn ghost small" id="no">Cancel</button></div>`; $('#yes').onclick = () => { store.data.games = {}; store.data.notes = {}; store.save(); renderEvidence(); }; $('#no').onclick = () => $('#conf').innerHTML = ''; };
   ready(); preview();
 }
 route();
