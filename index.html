@@ -203,7 +203,8 @@ input{font:inherit;color:inherit}
 .cheer{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:16px;background:rgba(19,41,75,.5);animation:cheerBg .3s both;cursor:pointer;transition:opacity .35s}
 .cheer.out{opacity:0}
 .cheer-card{width:min(100%,500px);background:var(--surface);color:var(--ink);border:4px solid #F2C744;border-radius:24px;padding:18px 22px 20px;text-align:center;box-shadow:var(--shadow);animation:cheerPop .6s cubic-bezier(.2,1.5,.4,1) both}
-.cheer-marty{width:min(64vw,270px);height:auto;display:block;margin:0 auto 10px;background:#FFFFFF;border-radius:16px;transform-origin:50% 90%;animation:cheerTrot .7s ease-in-out .55s 4 both}
+.cheer-pic{width:min(64vw,270px);margin:0 auto 10px;background:#FFFFFF;border-radius:16px;overflow:hidden}
+.cheer-marty{width:100%;height:auto;display:block;transform-origin:50% 90%;animation:cheerTrot .7s ease-in-out .55s 4 both}
 .cheer h2{font:800 clamp(1.5rem,6vw,2.2rem)/1.1 var(--font-display);margin:0 0 8px}
 .cheer p{margin:0 0 14px;font-size:1.08rem;font-weight:700;color:var(--ink-2);text-wrap:balance}
 @keyframes cheerBg{from{opacity:0}}
@@ -1683,7 +1684,7 @@ function DnD(root, onDropFn) {
 function cheer(puns) {
   const [head, line] = pick(puns), d = document.createElement('div');
   d.className = 'cheer'; d.setAttribute('role', 'status');
-  d.innerHTML = `<div class="cheer-card"><svg class="cheer-marty" viewBox="0 0 1440 810" aria-hidden="true">${mustangUse()}</svg><h2>${head}</h2><p>${line}</p><button class="btn" type="button">Giddyup!</button></div>`;
+  d.innerHTML = `<div class="cheer-card"><div class="cheer-pic"><svg class="cheer-marty" viewBox="0 0 1440 810" aria-hidden="true">${mustangUse()}</svg></div><h2>${head}</h2><p>${line}</p><button class="btn" type="button">Giddyup!</button></div>`;
   document.body.appendChild(d);
   const close = () => { clearTimeout(h); d.classList.add('out'); setTimeout(() => d.remove(), 380); };
   const h = setTimeout(close, 8000);
@@ -2472,8 +2473,9 @@ async function transcriptionFinale(svgEl, cap, token, replay) {
 }
 
 /* ================= TRANSLATION ================= */
-const RB_CODONS = ['ACC', 'AUG', 'GUG', 'CAU', 'CUG', 'ACU', 'CCU', 'GAG', 'GAG', 'AAG'];
-const FIN_CODONS = ['GCC', 'AUG', 'GUG', 'CAU', 'CUG', 'ACU', 'CCU', 'GAG', 'UAA', 'GCA', 'CUC', 'AAG', 'UCG'];
+// One mRNA for the opening animation, the labeling picture and the finale, so each can carry on from the last:
+// start codon AUG (codon 1), seven amino acids, then the stop codon UAA (codon 8).
+const RB_CODONS = ['ACC', 'AUG', 'GUG', 'CAU', 'CUG', 'ACU', 'CCU', 'GAG', 'UAA', 'GCA'];
 const cx0 = j => 40 + 78 * j;
 const SITE = { E: cx0(3) + 39, P: cx0(4) + 39, A: cx0(5) + 39 };
 function tRNAshape(cx, dy, anti, aa, op = 1, showAA = true) {
@@ -2525,10 +2527,10 @@ function riboScene(st) {
   return s;
 }
 const RB_STATIC = { shift: 0, tail: 56, codonBracket: 7, antiBracket: { cx: 726, dy: -150 }, chainBracket: true, trnas: [{ cx: SITE.E - 30, dy: -70, anti: 'GUA', aa: null, op: .55, showAA: false }, { cx: SITE.P, anti: 'GAC', aa: 'L', showAA: false }, { cx: SITE.A, anti: 'UGA', aa: 'T' }, { cx: 726, dy: -150, anti: 'GGA', aa: 'P' }], bond: [SITE.P, 222, SITE.A, 222], chain: { from: [SITE.P, 222], aas: ['H', 'V', 'M'], self: 'L' } };
-/* The start of translation is shared by the opening animation (stops on the labeling picture) and the finale.
-   Codons 1-7 are the same in RB_CODONS and FIN_CODONS, so these helpers work for both. */
-const tlAnti = j => [...FIN_CODONS[j]].map(b => rnaComp[b]).join('');
-const tlAA = j => CODON2AA[FIN_CODONS[j]];
+/* Translation in pieces, shared by the opening animation (stops on the labeling picture), the finale that carries on
+   from that picture, and the full replay. */
+const tlAnti = j => [...RB_CODONS[j]].map(b => rnaComp[b]).join('');
+const tlAA = j => CODON2AA[RB_CODONS[j]];
 const tlMs = j => 78 * (j - 4); // mRNA shift that puts codon j in the P site
 // ribosome assembles on the start codon; returns the state the elongation cycles carry forward
 async function tlStart(draw, token) {
@@ -2540,50 +2542,84 @@ async function tlStart(draw, token) {
   await tween(token, 1100, e => draw({ ms: tlMs(1), large: { dy: lerp(-230, 0, e), op: e }, trnas: [{ cx: SITE.P, anti: tlAnti(1), aa: 'M' }] }));
   return { chain: [], pAA: 'M', pAnti: tlAnti(1), eT: null }; // chain = amino acids already linked (newest first)
 }
-// a tRNA lands in the A site while the empty one leaves from E. stay = stop the leaving tRNA half-faded, where the labeling picture has it.
-async function tlArrive(draw, token, S, j, dur, stay) {
-  const a = tlAnti(j), aa = tlAA(j), ms = tlMs(j - 1);
+/* The three moves of one elongation cycle for codon j. S is the state from tlStart. o (all optional):
+   stay = stop the leaving E-site tRNA half-faded, where the labeling picture has it; from = [cx, dy] the arriving
+   tRNA starts from (already visible there); extra(e) = more tRNAs to keep on screen during the move. */
+async function tlArrive(draw, token, S, j, dur, o = {}) {
+  const a = tlAnti(j), aa = tlAA(j), ms = tlMs(j - 1), [fx, fy] = o.from || [SITE.A + 330, -200];
   await tween(token, dur, e => {
-    const trnas = S.eT ? [stay ? { cx: SITE.E - 30 * e, dy: -70 * e, anti: S.eT, showAA: false, op: lerp(1, .55, e) } : { cx: SITE.E - 40 * e, dy: -90 * e, anti: S.eT, showAA: false, op: 1 - e }] : [];
-    trnas.push({ cx: SITE.P, anti: S.pAnti, aa: S.pAA, showAA: !S.chain.length }, { cx: lerp(SITE.A + 330, SITE.A, e), dy: lerp(-200, 0, e), anti: a, aa, op: Math.min(1, e * 2) });
+    const trnas = S.eT ? [o.stay ? { cx: SITE.E - 30 * e, dy: -70 * e, anti: S.eT, showAA: false, op: lerp(1, .55, e) } : { cx: SITE.E - 40 * e, dy: -90 * e, anti: S.eT, showAA: false, op: 1 - e }] : [];
+    trnas.push({ cx: SITE.P, anti: S.pAnti, aa: S.pAA, showAA: !S.chain.length }, { cx: lerp(fx, SITE.A, e), dy: lerp(fy, 0, e), anti: a, aa, op: o.from ? 1 : Math.min(1, e * 2) });
     draw({ ms, trnas, chain: S.chain.length ? { from: [SITE.P, 222], aas: S.chain, self: S.pAA } : null });
   });
+  if (!o.stay) S.eT = null;
 }
-// one full elongation cycle for codon j: tRNA arrives, peptide bond forms, ribosome slides one codon
-async function tlCycle(draw, token, S, j, fast, step = () => { }) {
+async function tlBond(draw, token, S, j, dur, o = {}) {
   const a = tlAnti(j), aa = tlAA(j), ms = tlMs(j - 1);
-  step(1);
-  await tlArrive(draw, token, S, j, fast ? 650 : 1100);
-  S.eT = null; step(2);
-  await tween(token, fast ? 450 : 900, e => draw({ ms, bond: [SITE.P, 222, SITE.A, 222], bondFlash: e, trnas: [{ cx: SITE.P, anti: S.pAnti, aa: S.pAA, showAA: false }, { cx: SITE.A, anti: a, aa, showAA: false }], chain: e < .5 ? { from: [SITE.P, 222], aas: S.chain, self: S.pAA } : { from: [SITE.A, 222], aas: [S.pAA, ...S.chain], self: aa } }));
-  S.chain = [S.pAA, ...S.chain];
-  await tween(token, fast ? 500 : 900, e => draw({ ms: ms + 78 * e, trnas: [{ cx: SITE.P - 78 * e, anti: S.pAnti, showAA: false }, { cx: SITE.A - 78 * e, anti: a, aa, showAA: false }], chain: { from: [SITE.A - 78 * e, 222], aas: S.chain, self: aa } }));
+  await tween(token, dur, e => draw({ ms, bond: [SITE.P, 222, SITE.A, 222], bondFlash: e, trnas: [...(o.extra ? o.extra(e) : []), { cx: SITE.P, anti: S.pAnti, aa: S.pAA, showAA: false }, { cx: SITE.A, anti: a, aa, showAA: false }], chain: e < .5 ? { from: [SITE.P, 222], aas: S.chain, self: S.pAA } : { from: [SITE.A, 222], aas: [S.pAA, ...S.chain], self: aa } }));
+  S.chain = [S.pAA, ...S.chain]; S.eT = null;
+}
+async function tlShift(draw, token, S, j, dur, o = {}) {
+  const a = tlAnti(j), aa = tlAA(j), ms = tlMs(j - 1);
+  await tween(token, dur, e => draw({ ms: ms + 78 * e, trnas: [...(o.extra ? o.extra(e) : []), { cx: SITE.P - 78 * e, anti: S.pAnti, showAA: false }, { cx: SITE.A - 78 * e, anti: a, aa, showAA: false }], chain: { from: [SITE.A - 78 * e, 222], aas: S.chain, self: aa } }));
   S.eT = S.pAnti; S.pAnti = a; S.pAA = aa;
 }
+// one full elongation cycle: tRNA arrives, peptide bond forms, ribosome slides one codon
+async function tlCycle(draw, token, S, j, fast, step = () => { }, o) {
+  step(1);
+  await tlArrive(draw, token, S, j, fast ? 650 : 1100, o);
+  step(2);
+  await tlBond(draw, token, S, j, fast ? 450 : 900);
+  await tlShift(draw, token, S, j, fast ? 500 : 900);
+}
+const TL_PUNS = [
+  ['Giddyup, ribosome!', 'Three letters at a time, all the way to the finish line.'],
+  ['tRNA: the Pony Express!', 'Every amino acid delivered right on time.'],
+  ['Stop codon? Whoa!', 'Even Marty knows when to pull on the reins.'],
+  ['Now that is a stable protein!', 'Folded up neat and ready to work. No horsing around.'],
+  ['Neigh-led it!', 'Codon by codon, you never broke your stride.'],
+  ['Hay, you built a protein!', 'Marty is so proud he could fold.']
+];
 const TL_INTRO = {
   title: 'Watch how it starts', focusX: SITE.P,
   steps: ['The protein builder snaps together on the message at START: AUG.', 'Carriers bring in building blocks. Their three letters must match the message.', 'The blocks link together, and the builder slides to the next three letters.'],
   async play(svgEl, token, step) {
     const g = svgEl.querySelector('#scene'), st0 = RB_STATIC, [e0, , , pro] = st0.trnas;
-    const draw = st => { if (!token.cancel) morph(g, riboScene({ codons: RB_CODONS, tail: st0.tail, ...st })); };
+    const draw = st => { if (!token.cancel) morph(g, riboScene({ tail: st0.tail, ...st })); };
     step(0);
     const S = await tlStart(draw, token);
     await wait(token, 400);
     for (let j = 2; j <= 4; j++) { if (token.cancel) return; await tlCycle(draw, token, S, j, j > 3, j === 2 ? step : undefined); if (j === 2) await wait(token, 300); }
     if (token.cancel) return;
     // one more tRNA arrives, the next bond starts to form, and the picture freezes exactly on the labeling diagram
-    await tlArrive(draw, token, S, 5, 1000, true);
+    await tlArrive(draw, token, S, 5, 1000, { stay: true });
     const held = [e0, { cx: SITE.P, anti: S.pAnti, showAA: false }, { cx: SITE.A, anti: tlAnti(5), aa: tlAA(5) }];
     await tween(token, 900, e => draw({ ms: 0, bond: st0.bond, bondOp: e, trnas: [...held, { ...pro, cx: lerp(pro.cx + 150, pro.cx, e), dy: lerp(pro.dy - 110, pro.dy, e), op: e }], chain: st0.chain }));
     await wait(token, 350);
   }
 };
-async function translationFinale(svgEl, cap, token) {
-  const g = svgEl.querySelector('#scene');
-  const draw = st => { if (!token.cancel) morph(g, riboScene({ codons: FIN_CODONS, siteLetters: true, ...st })); };
+async function translationFinale(svgEl, cap, token, replay) {
+  const g = svgEl.querySelector('#scene'), st0 = RB_STATIC;
+  const draw = st => { if (!token.cancel) morph(g, riboScene({ tail: st0.tail, siteLetters: replay, ...st })); };
   const msFor = tlMs;
-  const S = await tlStart(draw, token);
-  for (let j = 2; j <= 7; j++) { if (token.cancel) return; await tlCycle(draw, token, S, j, j > 3); }
+  let S;
+  if (replay) {
+    // Replay: the whole story from the start codon
+    S = await tlStart(draw, token);
+    for (let j = 2; j <= 7; j++) { if (token.cancel) return; await tlCycle(draw, token, S, j, j > 3); }
+  } else {
+    // First time: carry on from the frozen labeling picture. Thr is in the A site, the bond is forming, the empty
+    // tRNA is halfway out of the E site, and the Pro tRNA is waiting in the cytoplasm for its turn.
+    const [e0, , , pro] = st0.trnas;
+    S = { chain: [...st0.chain.aas], pAA: st0.chain.self, pAnti: st0.trnas[1].anti, eT: null };
+    const waiting = () => [{ ...pro }];
+    await tlBond(draw, token, S, 5, 900, { extra: e => [{ ...e0, cx: e0.cx - 12 * e, dy: e0.dy - 25 * e, op: e0.op * (1 - e) }, ...waiting()] });
+    await tlShift(draw, token, S, 5, 900, { extra: waiting });
+    if (token.cancel) return;
+    await tlCycle(draw, token, S, 6, false, undefined, { from: [pro.cx, pro.dy] }); // the waiting tRNA takes its turn
+    if (token.cancel) return;
+    await tlCycle(draw, token, S, 7, true);
+  }
   if (token.cancel) return;
   const { chain, pAA, pAnti, eT } = S;
   // termination
@@ -2634,7 +2670,7 @@ reg({
 });
 reg({
   id: 'translate', level: 2, icon: 'translate', title: 'Label: Translation', blurb: 'Label a ribosome at work, then watch it build a protein.',
-  how: 'First, watch translation begin. Then drag the nine labels onto the frozen picture. The moment they are all right, you will watch the whole thing, from the start codon to a folded protein.',
+  how: 'First, watch translation begin. Then drag the nine labels onto the frozen picture. The moment they are all right, you will watch translation finish, all the way to a folded protein.',
   run(arena, g) {
     const svg = `<svg viewBox="0 0 900 460" role="img" aria-label="Translation diagram"><g id="scene">${riboScene(RB_STATIC)}</g><g id="leaders"></g></svg>`;
     const cb = chainBracketGeom(RB_STATIC.chain.from, RB_STATIC.chain.aas).mid;
@@ -2653,7 +2689,7 @@ reg({
     labelDiagram(wrap, {
       svg, vb: [900, 460], zones,
       onCheck: (first, tot) => { record(g.id, first, tot); toast(`Saved: ${first}/${tot} on your first check`); },
-      intro: TL_INTRO, finale: translationFinale,
+      intro: TL_INTRO, finale: translationFinale, cheerPuns: TL_PUNS,
       restore: svgEl => { svgEl.querySelector('#scene').innerHTML = riboScene(RB_STATIC); }
     });
     wrap.querySelector('.diagram').style.minWidth = '640px';
