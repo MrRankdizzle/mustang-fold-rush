@@ -170,7 +170,6 @@ input{font:inherit;color:inherit}
 .ld-side>*{margin:0}
 @media (min-width:1080px){
   .ld{grid-template-columns:minmax(0,1fr) 250px;column-gap:18px;align-items:start}
-  .ld-watch{grid-column:1/-1}
   /* fit the whole diagram on screen: width limited by the window height (gbar + directions + card padding ~ 180px) */
   .ld .diagram{max-width:calc((100vh - 180px) * var(--ar,1.6));max-width:calc((100svh - 180px) * var(--ar,1.6))}
   .ld-main{overflow:visible}
@@ -183,6 +182,23 @@ input{font:inherit;color:inherit}
   .ld-side .row .btn{padding:8px 12px;font-size:.88rem}
 }
 .diagram>svg{display:block;width:100%;height:auto}
+/* opening animation: the label boxes, leader lines and label bank stay hidden until it ends, then fade in */
+.ld #leaders{transition:opacity .45s}
+.ld-playing #leaders{opacity:0}
+.ld-playing .dz{opacity:0;pointer-events:none}
+.ld-reveal .dz{animation:dzIn .4s both;animation-delay:calc(var(--i,0)*60ms)}
+@keyframes dzIn{from{opacity:0}}
+.ld-intro{display:none}
+.ld-playing .ld-intro{display:grid;gap:10px}
+.ld-playing .ld-side>:not(.ld-intro){display:none}
+.ld-intro-h{margin:0;font:800 1.05rem var(--font-display);color:var(--ink);display:flex;align-items:center;gap:4px}
+.ld-intro ol{list-style:none;margin:0;padding:0;display:grid;gap:6px;counter-reset:lds}
+.ld-intro li{counter-increment:lds;display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:start;padding:8px 10px;border-radius:10px;border:2px solid transparent;background:var(--surface-2);color:var(--ink-2);font-size:.92rem;line-height:1.3;opacity:.5;transition:opacity .3s}
+.ld-intro li::before{content:counter(lds);width:24px;height:24px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font-weight:800;font-size:.8rem}
+.ld-intro li.done{opacity:.8}
+.ld-intro li.on{opacity:1;color:var(--ink);font-weight:700;border-color:var(--carolina)}
+.ld-intro li.on::before{background:var(--carolina);color:var(--on-accent)}
+.ld-intro .btn{justify-self:start}
 .dz{position:absolute;transform:translate(-50%,-50%);min-width:96px;min-height:34px;border:2px dashed var(--carolina);border-radius:9px;background:var(--surface);display:grid;place-items:center;font-size:.8rem;font-weight:700;padding:2px 6px;text-align:center;color:var(--ink-2);line-height:1.15}
 .dz .chip{padding:4px 8px;font-size:.78rem;border-width:2px}
 .dz.filled{border-style:solid;background:var(--surface)}
@@ -1654,26 +1670,30 @@ function DnD(root, onDropFn) {
 }
 
 /* ---------- label-the-diagram component ---------- */
-/* zones: [{id,label,x,y,px,py}] in viewBox coords. x,y = drop box center, px,py = point the leader line touches */
-function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, watch, finale, restore, decoyNotes = {} }) {
+/* zones: [{id,label,x,y,px,py,mark}] in viewBox coords. x,y = drop box center, px,py = point the leader line touches.
+   mark (optional) = SVG for a bracket or outline box drawn around the part, so the leader's dot can touch that instead
+   of floating beside a small or wide part. It lives with the leaders, so it hides during the animations.
+   intro (optional) = { title, steps: [text], play(svgEl, token, step) }: an opening animation that plays before the
+   labels appear. focusX = where the action is, so narrow screens scroll the picture to it. play calls step(i) as each step begins and must leave drawing alone once token.cancel is set. */
+function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, intro, finale, restore, decoyNotes = {} }) {
   const [W, H] = vb;
   host.innerHTML = `
-    <div class="ld">
-    ${watch ? `<div class="row ld-watch"><button class="btn ghost small" id="watchBtn">Watch it happen</button><span class="muted" id="watchNote" style="font-size:.9rem">Press to see the animation, then label the frozen diagram.</span></div>` : ''}
+    <div class="ld${intro ? ' ld-playing' : ''}">
     <div class="ld-main"><div class="diagram" id="dg" style="--ar:${(W / H).toFixed(4)}">${svg}</div>
     <div class="caption-bar" id="cap" hidden aria-live="polite"></div></div>
     <div class="ld-side">
+    ${intro ? `<div class="ld-intro" id="ldIntro"><p class="ld-intro-h">${sayBtn(intro.steps.map((t, i) => `Step ${i + 1}. ${plain(t)}`).join(' '), 'Read the steps out loud')}<span>${intro.title}</span></p><ol aria-live="polite">${intro.steps.map(t => `<li><span>${t}</span></li>`).join('')}</ol><button class="btn small" id="introSkip">Skip to the labels</button></div>` : ''}
     <p class="muted" id="ldTip" style="font-size:.9rem">Drag each label to a dashed box, or tap a label and then tap a box. Tap a placed label to send it back.</p>
     <div class="bank" id="bank" data-drop="bank"></div>
     <div class="feedback" id="fb"></div>
-    <div class="row" id="ldBtns"><button class="btn ghost" id="chk">Show wrong labels</button><button class="btn ghost" id="reset">Reset</button></div>
+    <div class="row" id="ldBtns"><button class="btn ghost" id="chk">Show wrong labels</button><button class="btn ghost" id="reset">Reset</button>${intro ? '<button class="btn ghost" id="introAgain">Watch the start again</button>' : ''}</div>
     </div></div>`;
   const dg = $('#dg', host), bank = $('#bank', host), svgEl = $('svg', dg);
   // leaders
   const lead = svgEl.querySelector('#leaders') || (() => { const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'leaders'; svgEl.appendChild(g); return g; })();
-  lead.innerHTML = zones.map(z => `<line x1="${z.x}" y1="${z.y}" x2="${z.px}" y2="${z.py}" style="stroke:var(--ink);stroke-width:2;stroke-dasharray:4 3"/><circle cx="${z.px}" cy="${z.py}" r="5" style="fill:var(--ink);stroke:var(--surface);stroke-width:2"/>`).join('');
+  lead.innerHTML = zones.map(z => `${z.mark || ''}<line x1="${z.x}" y1="${z.y}" x2="${z.px}" y2="${z.py}" style="stroke:var(--ink);stroke-width:2;stroke-dasharray:4 3"/><circle cx="${z.px}" cy="${z.py}" r="5" style="fill:var(--ink);stroke:var(--surface);stroke-width:2"/>`).join('');
   zones.forEach((z, i) => {
-    const d = document.createElement('div'); d.className = 'dz'; d.dataset.drop = z.id; d.dataset.zone = z.id;
+    const d = document.createElement('div'); d.className = 'dz'; d.dataset.drop = z.id; d.dataset.zone = z.id; d.style.setProperty('--i', i);
     d.style.left = (100 * z.x / W) + '%'; d.style.top = (100 * z.y / H) + '%';
     d.innerHTML = `<span class="dz-num">${i + 1}</span><span class="ph">?</span>`; dg.appendChild(d);
   });
@@ -1737,12 +1757,24 @@ function labelDiagram(host, { svg, vb, zones, distractors = [], onCheck, watch, 
     $('#showLabels', host).onclick = () => { restore && restore(svgEl); $$('.dz', dg).forEach(z => z.style.visibility = ''); lead.style.visibility = ''; };
   }
   $('#reset', host).onclick = () => { $$('.dz .chip', dg).forEach(c => bank.appendChild(c)); $$('.dz', dg).forEach(z => { z.className = 'dz'; if (!z.querySelector('.ph')) z.insertAdjacentHTML('beforeend', '<span class="ph">?</span>'); }); fb.textContent = ''; };
-  if (watch) {
-    $('#watchBtn', host).onclick = async (e) => {
-      const b = e.currentTarget; b.disabled = true; $$('.dz', dg).forEach(z => z.style.visibility = 'hidden'); lead.style.visibility = 'hidden';
-      await watch(svgEl, $('#watchNote', host));
-      $$('.dz', dg).forEach(z => z.style.visibility = ''); lead.style.visibility = ''; b.disabled = false; b.textContent = 'Watch again';
+  if (intro) {
+    const ld = $('.ld', host), lis = $$('#ldIntro li', host);
+    let tok = null;
+    const step = i => lis.forEach((li, j) => { li.classList.toggle('on', j === i); li.classList.toggle('done', j < i); });
+    const playIntro = async () => {
+      if (tok || solved) return;
+      const mine = tok = { cancel: false };
+      ld.classList.remove('ld-reveal'); ld.classList.add('ld-playing'); step(0);
+      const sc = $('.ld-main', host); if (intro.focusX != null) sc.scrollLeft = intro.focusX / W * sc.scrollWidth - sc.clientWidth / 2;
+      // ends the same way whether the animation finishes or the student skips: freeze on the labeling picture
+      const done = () => { if (tok !== mine) return; mine.cancel = true; tok = null; restore && restore(svgEl); ld.classList.remove('ld-playing'); ld.classList.add('ld-reveal'); };
+      $('#introSkip', host).onclick = done;
+      await intro.play(svgEl, mine, i => { if (!mine.cancel) step(i); });
+      done();
     };
+    onLeave(() => { if (tok) tok.cancel = true; });
+    $('#introAgain', host).onclick = playIntro;
+    playIntro();
   }
 }
 
@@ -2265,6 +2297,9 @@ const TX_YT = 275, TX_YB = 345;
 const TX_PORES = [-165, -132, -100, -68, -35, -5, 165];
 const TX_EXIT = (() => { const a = -35 * Math.PI / 180; return [TXN.cx + (TXN.rx + 4) * Math.cos(a), TXN.cy + (TXN.ry + 4) * Math.sin(a)]; })();
 const TX_HOMES = [[150, 452], [236, 494], [548, 462], [612, 492], [705, 458], [772, 415]];
+const TX_LABELED = 4;                                          // the free nucleotide the label points at (it holds still)
+const TX_SLOPE = 46;                                           // width of the curve where the strands part
+const smooth01 = t => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 const TX_HOME_B = ['A', 'U', 'G', 'C', 'A', 'U'];
 function txBG() {
   let s = `<rect width="900" height="560" rx="18" style="fill:var(--cyto)"/>`;
@@ -2281,30 +2316,41 @@ function txBG() {
 }
 // tail of finished mRNA: rises out of the polymerase, then curls left
 function txTail(ax, ay, count) { const pts = []; let x = ax, y = ay; for (let i = 0; i < count; i++) { const h = (-90 - Math.min(78, Math.max(0, i - 2) * 14)) * Math.PI / 180; x += 26 * Math.cos(h); y += 26 * Math.sin(h); pts.push([x, y]); } return pts; }
-/* st: {k: last base copied (float ok), a: bubble opening 0-1, pol:{x,y,op}, fly:{x,y,b}, free:[{x,y,b}], t: seconds for drifting nucleotides, ribo:{x,y,op}} */
+/* st: {k: last base copied (float ok), a: bubble opening 0-1, w: bubble width 0-1 (starts narrow, widens like a zipper),
+   pol:{x,y,op}, fly:{x,y,b}, free:[{x,y,b}], t: seconds for drifting nucleotides, amp: drift size 0-1, ribo:{x,y,op}} */
 function txFrame(st) {
   const k = st.k, a = st.a, kf = Math.floor(k);
   const YTb = TX_YT - 62 * a, YBb = TX_YB + 52 * a;
-  const b0 = txB0(k), b1 = b0 + 8, xs = nxT(b0) - 14, xe = nxT(b1) + 14;
+  const b0 = txB0(k), b1 = b0 + 8, cx = (nxT(b0) + nxT(b1)) / 2, half = lerp(TX_SLOPE, (nxT(b1) - nxT(b0)) / 2 + 14, st.w ?? 1);
+  const xs = cx - half, xe = cx + half;
+  // how far apart the strands are at x: 0 = still paired, 1 = fully open. Every base rides the strand at its own x,
+  // so the bases on the curved edges of the bubble open (and re-close) smoothly instead of popping.
+  const open = x => a * smooth01(Math.min(x - xs, xe - x) / TX_SLOPE);
   let s = '';
   // drifting free nucleotides in the nucleoplasm
-  TX_HOMES.forEach(([x, y], i) => { const t = st.t || 0; s += freeNuc(x + Math.sin(t * 1.3 + i) * 5, y + Math.cos(t * 1.1 + i * 2) * 5, TX_HOME_B[i], st.t == null ? 'floaty' : ''); });
+  const amp = st.amp ?? 1;
+  TX_HOMES.forEach(([x, y], i) => { const t = st.t || 0; s += freeNuc(x + Math.sin(t * 1.3 + i) * 5 * amp, y + Math.cos(t * 1.1 + i * 2) * 5 * amp, TX_HOME_B[i], st.t == null && i !== TX_LABELED ? 'floaty' : ''); });
   // polymerase (behind the strands)
-  if (st.pol && st.pol.op > 0) s += `<ellipse cx="${st.pol.x}" cy="${st.pol.y}" rx="140" ry="106" style="fill:var(--carolina);opacity:${(.22 * st.pol.op).toFixed(3)};stroke:var(--carolina);stroke-width:2.5;stroke-dasharray:7 5;stroke-opacity:${st.pol.op}"/>`;
+  if (st.pol && st.pol.op > 0) s += `<ellipse cx="${st.pol.x}" cy="${st.pol.y}" rx="140" ry="130" style="fill:var(--carolina);fill-opacity:${(.22 * st.pol.op).toFixed(3)};stroke:var(--carolina);stroke-width:3;stroke-opacity:${st.pol.op}"/>`;
   // strands
-  const strand = (Y, Yb, col) => `<path d="M80 ${Y} L${xs} ${Y} C${xs + 22} ${Y} ${xs + 20} ${Yb} ${xs + 46} ${Yb} L${xe - 46} ${Yb} C${xe - 20} ${Yb} ${xe - 22} ${Y} ${xe} ${Y} L792 ${Y}" style="fill:none;stroke:${col};stroke-width:6;stroke-linecap:round"/>`;
-  s += strand(TX_YT, YTb, 'var(--bG)') + strand(TX_YB, YBb, 'var(--carolina-deep)');
-  const mid = (TX_YT + TX_YB) / 2;
+  const strand = (Y, dY, col) => {
+    let d = `M80 ${Y} L${xs.toFixed(1)} ${Y}`;
+    for (let i = 1; i <= 12; i++) { const x = xs + TX_SLOPE * i / 12; d += ` L${x.toFixed(1)} ${(Y + dY * open(x)).toFixed(1)}`; }
+    for (let i = 0; i <= 12; i++) { const x = xe - TX_SLOPE + TX_SLOPE * i / 12; d += ` L${x.toFixed(1)} ${(Y + dY * open(x)).toFixed(1)}`; }
+    return `<path d="${d} L792 ${Y}" style="fill:none;stroke:${col};stroke-width:6;stroke-linecap:round;stroke-linejoin:round"/>`;
+  };
+  s += strand(TX_YT, -62, 'var(--bG)') + strand(TX_YB, 52, 'var(--carolina-deep)');
+  const mid = (TX_YT + TX_YB) / 2, fade = (txt, op) => op >= 1 ? txt : `<g style="opacity:${op.toFixed(2)}">${txt}</g>`;
   for (let n = 0; n < TX_T.length; n++) {
-    const x = nxT(n), tb = TX_T[n], cb = dnaComp[tb], inside = x > xs + 30 && x < xe - 30;
-    if (!inside || a < .35) {
-      const yt = inside ? lerp(TX_YT, YTb, a) : TX_YT, yb = inside ? lerp(TX_YB, YBb, a) : TX_YB;
-      s += `<line x1="${x}" y1="${yt + 2}" x2="${x}" y2="${mid}" style="stroke:${BASECOL[cb]};stroke-width:7"/><line x1="${x}" y1="${yb - 2}" x2="${x}" y2="${mid}" style="stroke:${BASECOL[tb]};stroke-width:7"/>`;
-      s += T_(x, yt - 10, cb, 10, 'var(--ink-2)') + T_(x, yb + 18, tb, 10, 'var(--ink-2)');
-    } else {
-      s += `<line x1="${x}" y1="${YTb + 2}" x2="${x}" y2="${YTb + 14}" style="stroke:${BASECOL[cb]};stroke-width:6"/>` + T_(x, YTb + 28, cb, 13, BASECOL[cb]);
-      s += `<line x1="${x}" y1="${YBb - 2}" x2="${x}" y2="${YBb - 10}" style="stroke:${BASECOL[tb]};stroke-width:6"/>` + T_(x, YBb - 15, tb, 13, BASECOL[tb]);
-    }
+    const x = nxT(n), tb = TX_T[n], cb = dnaComp[tb], o = open(x), yt = TX_YT - 62 * o, yb = TX_YB + 52 * o;
+    // each base stays on its own strand: as the pair lets go, the two halves pull back into short stubs
+    const q = Math.min(1, o * 2.5), sw = lerp(7, 6, q);
+    s += `<line x1="${x}" y1="${(yt + 2).toFixed(1)}" x2="${x}" y2="${(yt + 2 + lerp(mid - TX_YT - 2, 12, q)).toFixed(1)}" style="stroke:${BASECOL[cb]};stroke-width:${sw}"/><line x1="${x}" y1="${(yb - 2).toFixed(1)}" x2="${x}" y2="${(yb - 2 - lerp(TX_YB - mid - 2, 8, q)).toFixed(1)}" style="stroke:${BASECOL[tb]};stroke-width:${sw}"/>`;
+    // letters: small and outside while paired, large and inside the bubble once open. On the curved edges of the
+    // bubble neither fits without touching the strand, so those bases show their color only.
+    const out = clamp(1 - o / .15, 0, 1), inn = clamp((o - .6) / .3, 0, 1);
+    if (out > 0) s += fade(T_(x, (yt - 10).toFixed(1), cb, 10, 'var(--ink-2)') + T_(x, (yb + 18).toFixed(1), tb, 10, 'var(--ink-2)'), out);
+    if (inn > 0) s += fade(T_(x, (yt + 28).toFixed(1), cb, 13, BASECOL[cb]) + T_(x, (yb - 15).toFixed(1), tb, 13, BASECOL[tb]), inn);
   }
   // mRNA still paired to the template (RNA-DNA hybrid) + the tail peeling away
   const pos = {};
@@ -2335,27 +2381,41 @@ function txFrame(st) {
 const floatCSS = `<style>.floaty{animation:floaty 3.2s ease-in-out infinite}.floaty:nth-of-type(2n){animation-duration:4s}@keyframes floaty{50%{transform:translate(4px,-6px)}}</style>`;
 const TX_STATIC = { k: 15, a: 1, pol: { x: txPolX(15), y: 310, op: 1 } };
 function pathPoint(P, s) { let acc = 0; for (let i = 0; i < P.length - 1; i++) { const [ax, ay] = P[i], [bx, by] = P[i + 1], L = Math.hypot(bx - ax, by - ay); if (acc + L >= s) { const t = (s - acc) / L; return [ax + (bx - ax) * t, ay + (by - ay) * t]; } acc += L; } const [ax, ay] = P[P.length - 2], [bx, by] = P[P.length - 1], L = Math.hypot(bx - ax, by - ay); return [bx + (bx - ax) / L * (s - acc), by + (by - ay) / L * (s - acc)]; }
-async function transcriptionFinale(svgEl, cap, token) {
-  const g = svgEl.querySelector('#scene');
-  const draw = st => { morph(g, txFrame(st).s); };
+/* The start of transcription, shared by the opening animation (stops on the labeling picture, k = TX_STATIC.k) and the
+   finale (runs to the end of the gene). pace = [ms per base for the first few, ms per base after that]. */
+async function txOpening(g, token, kStop, pace, step = () => { }, settle = false) {
+  const draw = st => { if (!token.cancel) morph(g, txFrame(st).s); };
   const T = () => performance.now() / 1000;
   const bind = txPolX(TX_START - 1);
   // 1. polymerase arrives
-  setCap(cap, 1, 'RNA polymerase finds the start of a gene and grabs onto the DNA.');
+  step(0);
   await tween(token, 1900, e => draw({ k: TX_START - 1, a: 0, pol: { x: lerp(bind - 330, bind, e), y: lerp(130, 310, e), op: e }, t: T() }));
   await wait(token, 300);
-  // 2. bubble opens
-  setCap(cap, 2, 'It unzips the double helix, opening a <b>transcription bubble</b>.');
-  await tween(token, 1400, e => draw({ k: TX_START - 1, a: e, pol: { x: bind, y: 310, op: 1 }, t: T() }));
+  // 2. the bubble opens from the middle outward, like a zipper
+  step(1);
+  await tween(token, 1700, e => draw({ k: TX_START - 1, a: Math.min(1, e * 1.35), w: e, pol: { x: bind, y: 310, op: 1 }, t: T() }));
+  await wait(token, settle ? 500 : 0);
   // 3. elongation: nucleotides pair with the template one at a time
-  for (let k = TX_START - 1; k < TX_END; k++) {
+  step(2);
+  for (let k = TX_START - 1; k < kStop; k++) {
     if (token.cancel) return;
-    const n = k + 1, tb = TX_T[n], nb = dnaToMrna[tb], hi = (n * 7) % TX_HOMES.length, [hx, hy] = TX_HOMES[hi];
-    const slow = k < TX_START + 3, dur = slow ? 720 : 300;
-    setCap(cap, 3, `Free RNA nucleotides from the nucleoplasm pair with the template strand: <span class="mono">${tb}</span> pairs with <span class="mono" style="color:${BASECOL[nb]}">${nb}</span>${nb === 'U' ? ' (uracil, because RNA has no thymine)' : ''}.`);
-    await tween(token, dur, e => { const x = nxT(n), y = TX_YB + 52 - 35 - 4; draw({ k: k + e * .999, a: 1, pol: { x: txPolX(k + e * .999), y: 310, op: 1 }, fly: { x: lerp(hx, x, e), y: lerp(hy, y, e) - Math.sin(e * Math.PI) * 50, b: nb }, t: T() }); });
+    const n = k + 1, nb = dnaToMrna[TX_T[n]], hi = (n * 7) % TX_HOMES.length, [hx, hy] = TX_HOMES[hi];
+    const dur = k < TX_START + 3 ? pace[0] : pace[1];
+    // settle: the drifting nucleotides glide home over the last few bases so nothing jumps when the picture freezes
+    await tween(token, dur, e => { const x = nxT(n), y = TX_YB + 52 - 35 - 4; draw({ k: k + e * .999, a: 1, pol: { x: txPolX(k + e * .999), y: 310, op: 1 }, fly: { x: lerp(hx, x, e), y: lerp(hy, y, e) - Math.sin(e * Math.PI) * 50, b: nb }, t: T(), amp: settle ? clamp((kStop - k - e) / 3, 0, 1) : 1 }); });
   }
-  draw({ k: TX_END, a: 1, pol: { x: txPolX(TX_END), y: 310, op: 1 }, t: T() });
+  draw({ k: kStop, a: 1, pol: { x: txPolX(kStop), y: 310, op: 1 }, t: T(), amp: settle ? 0 : 1 });
+}
+const TX_INTRO = {
+  title: 'Watch how it starts', focusX: 300,
+  steps: ['An enzyme lands on the DNA at the start of a gene.', 'It unzips the DNA. The opening is called the transcription bubble.', 'It copies one side of the DNA into RNA, one base at a time.'],
+  async play(svgEl, token, step) { await txOpening(svgEl.querySelector('#scene'), token, TX_STATIC.k, [780, 400], step, true); await wait(token, 350); }
+};
+async function transcriptionFinale(svgEl, cap, token) {
+  const g = svgEl.querySelector('#scene');
+  const T = () => performance.now() / 1000;
+  await txOpening(g, token, TX_END, [720, 300]);
+  if (token.cancel) return;
   await wait(token, 400);
   // 4. termination: polymerase lets go, DNA zips back, mRNA released
   setCap(cap, 4, 'At the end of the gene, RNA polymerase lets go and the DNA zips back together.');
@@ -2431,39 +2491,68 @@ function riboScene(st) {
   if (st.folded && st.folded.op > 0) s += `<g style="opacity:${st.folded.op}"><svg x="20" y="8" width="300" height="172" viewBox="240 90 320 280">${proteinSVG(st.folded.level, 20)}</svg></g>`;
   return s;
 }
-const RB_STATIC = { shift: 0, tail: 56, codonBracket: 7, antiBracket: { cx: 726, dy: -150 }, chainBracket: true, trnas: [{ cx: SITE.E - 30, dy: -70, anti: 'GUA', aa: null, op: .55, showAA: false }, { cx: SITE.P, anti: 'GAC', aa: 'L' }, { cx: SITE.A, anti: 'UGA', aa: 'T' }, { cx: 726, dy: -150, anti: 'GGA', aa: 'P' }], bond: [SITE.P, 222, SITE.A, 222], chain: { from: [SITE.P, 222], aas: ['H', 'V', 'M'] } };
+const RB_STATIC = { shift: 0, tail: 56, codonBracket: 7, antiBracket: { cx: 726, dy: -150 }, chainBracket: true, trnas: [{ cx: SITE.E - 30, dy: -70, anti: 'GUA', aa: null, op: .55, showAA: false }, { cx: SITE.P, anti: 'GAC', aa: 'L', showAA: false }, { cx: SITE.A, anti: 'UGA', aa: 'T' }, { cx: 726, dy: -150, anti: 'GGA', aa: 'P' }], bond: [SITE.P, 222, SITE.A, 222], chain: { from: [SITE.P, 222], aas: ['H', 'V', 'M'], self: 'L' } };
+/* The start of translation is shared by the opening animation (stops on the labeling picture) and the finale.
+   Codons 1-7 are the same in RB_CODONS and FIN_CODONS, so these helpers work for both. */
+const tlAnti = j => [...FIN_CODONS[j]].map(b => rnaComp[b]).join('');
+const tlAA = j => CODON2AA[FIN_CODONS[j]];
+const tlMs = j => 78 * (j - 4); // mRNA shift that puts codon j in the P site
+// ribosome assembles on the start codon; returns the state the elongation cycles carry forward
+async function tlStart(draw, token) {
+  // 1. small subunit + start codon
+  await tween(token, 1800, e => draw({ ms: tlMs(1) - 160 * (1 - e), small: { dx: lerp(-560, 0, e), dy: 0, op: 1 }, large: { dy: -230, op: 0 } }));
+  // 2. first tRNA (Met)
+  await tween(token, 1300, e => draw({ ms: tlMs(1), small: { dx: 0, dy: 0, op: 1 }, large: { dy: -230, op: 0 }, trnas: [{ cx: SITE.P, dy: lerp(-220, 0, e), anti: tlAnti(1), aa: 'M', op: e }] }));
+  // 3. large subunit joins
+  await tween(token, 1100, e => draw({ ms: tlMs(1), large: { dy: lerp(-230, 0, e), op: e }, trnas: [{ cx: SITE.P, anti: tlAnti(1), aa: 'M' }] }));
+  return { chain: [], pAA: 'M', pAnti: tlAnti(1), eT: null }; // chain = amino acids already linked (newest first)
+}
+// a tRNA lands in the A site while the empty one leaves from E. stay = stop the leaving tRNA half-faded, where the labeling picture has it.
+async function tlArrive(draw, token, S, j, dur, stay) {
+  const a = tlAnti(j), aa = tlAA(j), ms = tlMs(j - 1);
+  await tween(token, dur, e => {
+    const trnas = S.eT ? [stay ? { cx: SITE.E - 30 * e, dy: -70 * e, anti: S.eT, showAA: false, op: lerp(1, .55, e) } : { cx: SITE.E - 40 * e, dy: -90 * e, anti: S.eT, showAA: false, op: 1 - e }] : [];
+    trnas.push({ cx: SITE.P, anti: S.pAnti, aa: S.pAA, showAA: !S.chain.length }, { cx: lerp(SITE.A + 330, SITE.A, e), dy: lerp(-200, 0, e), anti: a, aa, op: Math.min(1, e * 2) });
+    draw({ ms, trnas, chain: S.chain.length ? { from: [SITE.P, 222], aas: S.chain, self: S.pAA } : null });
+  });
+}
+// one full elongation cycle for codon j: tRNA arrives, peptide bond forms, ribosome slides one codon
+async function tlCycle(draw, token, S, j, fast, step = () => { }) {
+  const a = tlAnti(j), aa = tlAA(j), ms = tlMs(j - 1);
+  step(1);
+  await tlArrive(draw, token, S, j, fast ? 650 : 1100);
+  S.eT = null; step(2);
+  await tween(token, fast ? 450 : 900, e => draw({ ms, bond: [SITE.P, 222, SITE.A, 222], bondFlash: e, trnas: [{ cx: SITE.P, anti: S.pAnti, aa: S.pAA, showAA: false }, { cx: SITE.A, anti: a, aa, showAA: false }], chain: e < .5 ? { from: [SITE.P, 222], aas: S.chain, self: S.pAA } : { from: [SITE.A, 222], aas: [S.pAA, ...S.chain], self: aa } }));
+  S.chain = [S.pAA, ...S.chain];
+  await tween(token, fast ? 500 : 900, e => draw({ ms: ms + 78 * e, trnas: [{ cx: SITE.P - 78 * e, anti: S.pAnti, showAA: false }, { cx: SITE.A - 78 * e, anti: a, aa, showAA: false }], chain: { from: [SITE.A - 78 * e, 222], aas: S.chain, self: aa } }));
+  S.eT = S.pAnti; S.pAnti = a; S.pAA = aa;
+}
+const TL_INTRO = {
+  title: 'Watch how it starts', focusX: SITE.P,
+  steps: ['The protein builder snaps together on the message at START: AUG.', 'Carriers bring in building blocks. Their three letters must match the message.', 'The blocks link together, and the builder slides to the next three letters.'],
+  async play(svgEl, token, step) {
+    const g = svgEl.querySelector('#scene'), st0 = RB_STATIC, [e0, , , pro] = st0.trnas;
+    const draw = st => { if (!token.cancel) morph(g, riboScene({ codons: RB_CODONS, tail: st0.tail, ...st })); };
+    step(0);
+    const S = await tlStart(draw, token);
+    await wait(token, 400);
+    for (let j = 2; j <= 4; j++) { if (token.cancel) return; await tlCycle(draw, token, S, j, j > 3, j === 2 ? step : undefined); if (j === 2) await wait(token, 300); }
+    if (token.cancel) return;
+    // one more tRNA arrives, the next bond starts to form, and the picture freezes exactly on the labeling diagram
+    await tlArrive(draw, token, S, 5, 1000, true);
+    const held = [e0, { cx: SITE.P, anti: S.pAnti, showAA: false }, { cx: SITE.A, anti: tlAnti(5), aa: tlAA(5) }];
+    await tween(token, 900, e => draw({ ms: 0, bond: st0.bond, bondOp: e, trnas: [...held, { ...pro, cx: lerp(pro.cx + 150, pro.cx, e), dy: lerp(pro.dy - 110, pro.dy, e), op: e }], chain: st0.chain }));
+    await wait(token, 350);
+  }
+};
 async function translationFinale(svgEl, cap, token) {
   const g = svgEl.querySelector('#scene');
-  const draw = st => { morph(g, riboScene({ codons: FIN_CODONS, siteLetters: true, ...st })); };
-  const anti = j => [...FIN_CODONS[j]].map(b => rnaComp[b]).join('');
-  const aaOf = j => CODON2AA[FIN_CODONS[j]];
-  const msFor = j => 78 * (j - 4); // codon j sits in the P site
-  // 1. small subunit + start codon
-  setCap(cap, 1, 'The small ribosomal subunit grabs the mRNA and finds the start codon, <span class="mono">AUG</span>.');
-  await tween(token, 1800, e => draw({ ms: msFor(1) - 160 * (1 - e), small: { dx: lerp(-560, 0, e), dy: 0, op: 1 }, large: { dy: -230, op: 0 } }));
-  // 2. first tRNA (Met)
-  setCap(cap, 2, 'The first tRNA (anticodon <span class="mono">UAC</span>) brings <b>methionine</b> to the start codon.');
-  await tween(token, 1300, e => draw({ ms: msFor(1), small: { dx: 0, dy: 0, op: 1 }, large: { dy: -230, op: 0 }, trnas: [{ cx: SITE.P, dy: lerp(-220, 0, e), anti: anti(1), aa: 'M', op: e }] }));
-  // 3. large subunit joins
-  setCap(cap, 3, 'The large subunit locks on. The ribosome is ready to build a protein.');
-  await tween(token, 1100, e => draw({ ms: msFor(1), large: { dy: lerp(-230, 0, e), op: e }, trnas: [{ cx: SITE.P, anti: anti(1), aa: 'M' }] }));
-  // elongation cycles
-  let chain = [];            // amino acids already linked (newest first), attached to P-site tRNA's amino acid
-  let pAA = 'M', pAnti = anti(1), eT = null;
-  for (let j = 2; j <= 7; j++) {
-    if (token.cancel) return;
-    const fast = j > 3, a = anti(j), aa = aaOf(j), ms = msFor(j - 1);
-    setCap(cap, 4, fast ? `...and again: anticodon <span class="mono">${a}</span> matches codon <span class="mono">${FIN_CODONS[j]}</span> and brings <b>${AANAME[aa]}</b>.` : `A tRNA with anticodon <span class="mono">${a}</span> matches codon <span class="mono">${FIN_CODONS[j]}</span> in the A site and delivers <b>${AANAME[aa].toLowerCase()}</b>.`);
-    const base = e => ({ ms, trnas: [...(eT ? [{ cx: SITE.E - 40 * e, dy: -90 * e, anti: eT, showAA: false, op: 1 - e }] : [])] });
-    await tween(token, fast ? 650 : 1100, e => { const b = base(e); b.trnas.push({ cx: SITE.P, anti: pAnti, aa: pAA, showAA: !chain.length }); b.trnas.push({ cx: lerp(SITE.A + 330, SITE.A, e), dy: lerp(-200, 0, e), anti: a, aa, op: Math.min(1, e * 2) }); b.chain = chain.length ? { from: [SITE.P, 222], aas: chain, self: pAA } : null; draw(b); });
-    eT = null;
-    if (!fast) setCap(cap, 4, 'A <b>peptide bond</b> links the amino acids, and the growing chain moves onto the newest tRNA.');
-    await tween(token, fast ? 450 : 900, e => draw({ ms, bond: [SITE.P, 222, SITE.A, 222], bondFlash: e, trnas: [{ cx: SITE.P, anti: pAnti, aa: pAA, showAA: false }, { cx: SITE.A, anti: a, aa, showAA: false }], chain: e < .5 ? { from: [SITE.P, 222], aas: chain, self: pAA } : { from: [SITE.A, 222], aas: [pAA, ...chain], self: aa } }));
-    chain = [pAA, ...chain];
-    if (!fast) setCap(cap, 4, 'The ribosome slides one codon toward the 3′ end. The empty tRNA moves to the E site and exits.');
-    await tween(token, fast ? 500 : 900, e => draw({ ms: ms + 78 * e, trnas: [{ cx: SITE.P - 78 * e, anti: pAnti, showAA: false }, { cx: SITE.A - 78 * e, anti: a, aa, showAA: false }], chain: { from: [SITE.A - 78 * e, 222], aas: chain, self: aa } }));
-    eT = pAnti; pAnti = a; pAA = aa;
-  }
+  const draw = st => { if (!token.cancel) morph(g, riboScene({ codons: FIN_CODONS, siteLetters: true, ...st })); };
+  const msFor = tlMs;
+  const S = await tlStart(draw, token);
+  for (let j = 2; j <= 7; j++) { if (token.cancel) return; await tlCycle(draw, token, S, j, j > 3); }
+  if (token.cancel) return;
+  const { chain, pAA, pAnti, eT } = S;
   // termination
   const msEnd = msFor(7);
   setCap(cap, 5, 'STOP codon <span class="mono">UAA</span>: no tRNA matches it, so a <b>release factor</b> fills the A site.');
@@ -2481,28 +2570,32 @@ async function translationFinale(svgEl, cap, token) {
 /* ---------- the two labeling activities ---------- */
 reg({
   id: 'transcribe', level: 2, icon: 'transcribe', title: 'Label: Transcription', blurb: 'Label transcription inside the nucleus, then watch it happen.',
-  how: 'We are zoomed in inside the nucleus. Drag the eight labels onto the diagram. The moment they are all right, you will watch transcription happen, from RNA polymerase arriving to the mRNA leaving the nucleus.',
+  how: 'We are zoomed in inside the nucleus. First, watch transcription begin. Then drag the eight labels onto the frozen picture. The moment they are all right, you will watch the whole thing, all the way to the mRNA leaving the nucleus.',
   run(arena, g) {
     const sc = txFrame(TX_STATIC), mt = sc.pos.tail;
     const svg = `<svg viewBox="0 0 900 560" role="img" aria-label="Transcription inside the nucleus">${floatCSS}<g id="bg">${txBG()}</g><g id="scene">${sc.s}</g><g id="leaders"></g></svg>`;
+    const ink = 'style="fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"';
+    const [fx, fy] = TX_HOMES[TX_LABELED], pa = -62 * Math.PI / 180;
     const zones = [
-      // RNA polymerase: point into the open middle of the enzyme, well away from the DNA strands and mRNA
-      { id: 'pol', label: 'RNA polymerase', x: 620, y: 140, px: 478, py: 288 },
+      // RNA polymerase: the dot sits on the enzyme's own outline, above the DNA, so it cannot be read as pointing at the bubble
+      { id: 'pol', label: 'RNA polymerase', x: 640, y: 120, px: TX_STATIC.pol.x + 140 * Math.cos(pa), py: TX_STATIC.pol.y + 130 * Math.sin(pa) },
       // mRNA: touch the backbone between the last two bases (not on a letter)
       { id: 'mrna', label: 'mRNA', x: 300, y: 36, px: (mt[mt.length - 1][0] + mt[mt.length - 2][0]) / 2, py: (mt[mt.length - 1][1] + mt[mt.length - 2][1]) / 2 },
       // Uracil: touch the left edge of the U square so the letter stays visible
       { id: 'u', label: 'Uracil', x: 210, y: 215, px: sc.pos.u[0] - 16, py: sc.pos.u[1] + 2 },
       { id: 'pore', label: 'Nuclear pore', x: 836, y: 36, px: TX_EXIT[0], py: TX_EXIT[1] },
-      { id: 'dna', label: 'DNA double helix', x: 100, y: 532, px: 103, py: 312 },   // straight up between two rungs, clear of the free nucleotides
+      // DNA double helix: a bracket hugging BOTH strands at the end of the DNA; the leader touches the bracket
+      { id: 'dna', label: 'DNA double helix', x: 92, y: 532, px: 61, py: 310, mark: `<path d="M70 ${TX_YT - 13} L61 ${TX_YT - 13} L61 ${TX_YB + 13} L70 ${TX_YB + 13}" ${ink}/>` },
       { id: 'nucleus', label: 'Nucleus', x: 305, y: 532, px: 335, py: 455 },
       { id: 'tmp', label: 'Template strand', x: 475, y: 532, px: 441, py: 397 },   // between two bases so no letter is covered
-      { id: 'nuc', label: 'Free RNA nucleotide', x: 660, y: 532, px: 707, py: 474 }
+      // Free RNA nucleotide: an outline box around one whole nucleotide (which holds still); the leader touches the box
+      { id: 'nuc', label: 'Free RNA nucleotide', x: 660, y: 532, px: fx - 5, py: fy + 18, mark: `<rect x="${fx - 29}" y="${fy - 18}" width="48" height="36" rx="9" ${ink}/>` }
     ];
     const wrap = document.createElement('div'); wrap.style.overflowX = 'auto'; arena.appendChild(wrap);
     labelDiagram(wrap, {
       svg, vb: [900, 560], zones,
       onCheck: (first, tot) => { record(g.id, first, tot); toast(`Saved: ${first}/${tot} on your first check`); },
-      finale: transcriptionFinale,
+      intro: TX_INTRO, finale: transcriptionFinale,
       restore: svgEl => { svgEl.querySelector('#scene').innerHTML = txFrame(TX_STATIC).s; }
     });
     wrap.querySelector('.diagram').style.minWidth = '640px';
@@ -2510,7 +2603,7 @@ reg({
 });
 reg({
   id: 'translate', level: 2, icon: 'translate', title: 'Label: Translation', blurb: 'Label a ribosome at work, then watch it build a protein.',
-  how: 'Drag the nine labels onto the diagram. The moment they are all right, you will watch translation happen, from the start codon to a folded protein.',
+  how: 'First, watch translation begin. Then drag the nine labels onto the frozen picture. The moment they are all right, you will watch the whole thing, from the start codon to a folded protein.',
   run(arena, g) {
     const svg = `<svg viewBox="0 0 900 460" role="img" aria-label="Translation diagram"><g id="scene">${riboScene(RB_STATIC)}</g><g id="leaders"></g></svg>`;
     const cb = chainBracketGeom(RB_STATIC.chain.from, RB_STATIC.chain.aas).mid;
@@ -2520,16 +2613,16 @@ reg({
       { id: 'mrna', label: 'mRNA', x: 800, y: 432, px: 852, py: 350 },
       { id: 'codon', label: 'Codon', x: 580, y: 432, px: cx0(7) + 39, py: 370 },
       { id: 'trna', label: 'tRNA', x: 830, y: 150, px: 734, py: 116 },
-      { id: 'anti', label: 'Anticodon', x: 830, y: 250, px: 763, py: 177 },
+      { id: 'anti', label: 'Anticodon', x: 830, y: 250, px: 726, py: 177 },   // middle of the bracket under the three bases
       { id: 'aa', label: 'Amino acid', x: 835, y: 62, px: 745, py: 68 },   // touches the right edge of the Pro bead
-      { id: 'bond', label: 'Peptide bond', x: 545, y: 36, px: SITE.P + 39, py: 222 },
+      { id: 'bond', label: 'Peptide bond', x: 545, y: 36, px: SITE.P + 39, py: 215 },   // rests on top of the bond instead of covering it
       { id: 'chain', label: 'Polypeptide chain', x: 360, y: 40, px: cb[0], py: cb[1] }   // straight down onto the bracket: never along it, never across the Met bead
     ];
     const wrap = document.createElement('div'); wrap.style.overflowX = 'auto'; arena.appendChild(wrap);
     labelDiagram(wrap, {
       svg, vb: [900, 460], zones,
       onCheck: (first, tot) => { record(g.id, first, tot); toast(`Saved: ${first}/${tot} on your first check`); },
-      finale: translationFinale,
+      intro: TL_INTRO, finale: translationFinale,
       restore: svgEl => { svgEl.querySelector('#scene').innerHTML = riboScene(RB_STATIC); }
     });
     wrap.querySelector('.diagram').style.minWidth = '640px';
